@@ -1,0 +1,21 @@
+[package]
+name        = "urge-monitor"
+description = "URGE continuous monitor: obligation lifecycle, temporal LTL monitoring, event-driven governance"
+version     = "0.1.0"
+edition     = "2021"
+authors     = ["Anthony R. Slosar <contact@todomodo.io>"]
+license     = "MIT"
+repository  = "https://github.com/toneron2/urge"
+
+[features]
+default = ["alloc"]
+alloc   = ["urge-core/alloc", "urge-meta/alloc"]
+std     = ["alloc", "urge-core/std", "urge-meta/std"]
+serde   = ["urge-core/serde", "dep:serde"]
+
+[dependencies]
+urge-core = { path = "../urge-core", version = "0.1.0" }
+urge-meta = { path = "../urge-meta", version = "0.1.0" }
+serde     = { version = "1", features = ["derive"], optional = true }
+heapless  = { version = "0.8", default-features = false }
+log       = { version = "0.4", default-features = false }

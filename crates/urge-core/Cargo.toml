@@ -1,0 +1,22 @@
+[package]
+name        = "urge-core"
+description = "URGE core: no_std Unicode semantic dictionary, AST, engine trait, and decision types"
+version     = "0.1.0"
+edition     = "2021"
+authors     = ["Anthony R. Slosar <contact@todomodo.io>"]
+license     = "MIT"
+repository  = "https://github.com/toneron2/urge"
+
+[features]
+default  = ["alloc"]
+alloc    = []
+std      = ["alloc"]
+serde    = ["dep:serde", "heapless/serde"]
+
+[dependencies]
+serde    = { version = "1", features = ["derive"], optional = true }
+smallvec = { version = "1.11", default-features = false, features = ["const_new"] }
+heapless = { version = "0.8", default-features = false }
+log      = { version = "0.4", default-features = false }
+
+[dev-dependencies]

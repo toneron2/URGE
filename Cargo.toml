@@ -1,0 +1,31 @@
+[workspace]
+members = [
+    "crates/urge-core",
+    "crates/urge-engines",
+    "crates/urge-meta",
+    "crates/urge-monitor",
+    "crates/urge-runtime",
+]
+resolver = "2"
+
+[workspace.package]
+version       = "0.1.0"
+edition       = "2021"
+rust-version  = "1.70"
+authors       = ["Anthony R. Slosar <contact@todomodo.io>"]
+license       = "MIT"
+repository    = "https://github.com/toneron2/urge"
+keywords      = ["governance", "formal-logic", "reasoning", "deontic", "embedded"]
+categories    = ["no-std", "algorithms"]
+
+[workspace.dependencies]
+urge-core    = { path = "crates/urge-core",    version = "0.1.0" }
+urge-engines = { path = "crates/urge-engines", version = "0.1.0" }
+urge-meta    = { path = "crates/urge-meta",    version = "0.1.0" }
+urge-monitor = { path = "crates/urge-monitor", version = "0.1.0" }
+serde        = { version = "1",    features = ["derive"] }
+regex        = { version = "1",    default-features = false, features = ["std"] }
+smallvec     = { version = "1.11", default-features = false }
+heapless     = { version = "0.8",  default-features = false }
+thiserror    = { version = "1" }
+log          = { version = "0.4",  default-features = false }
