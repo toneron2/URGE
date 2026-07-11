@@ -1,5 +1,10 @@
 # URGE — Universal Reasoning Governance Engine
 
+[![CI](https://github.com/toneron2/URGE/actions/workflows/ci.yml/badge.svg)](https://github.com/toneron2/URGE/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust 1.70+](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
+![Status: v0.1.0](https://img.shields.io/badge/status-v0.1.0-brightgreen.svg)
+
 > **Patent pending.** Core architecture covered by provisional patent application  
 > *"Unicode Semantic Dictionary and Multi-Logic Processing Architecture for  
 > Modular Reasoning Systems"* — TODOMODO.IO AGENCY LLC / Anthony R. Slosar
