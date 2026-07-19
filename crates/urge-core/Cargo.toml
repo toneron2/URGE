@@ -1,11 +1,15 @@
 [package]
 name        = "urge-core"
 description = "URGE core: no_std Unicode semantic dictionary, AST, engine trait, and decision types"
-version     = "0.1.0"
-edition     = "2021"
-authors     = ["Anthony R. Slosar <contact@todomodo.io>"]
-license     = "Apache-2.0"
-repository  = "https://github.com/toneron2/urge"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+keywords.workspace     = true
+readme.workspace       = true
+categories.workspace   = true
 
 [features]
 default  = ["alloc"]

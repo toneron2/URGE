@@ -1,11 +1,15 @@
 [package]
 name        = "urge-engines"
 description = "URGE logic engine implementations: Boolean, Modal, Deontic, Temporal, Epistemic, Fuzzy, Paraconsistent"
-version     = "0.1.0"
-edition     = "2021"
-authors     = ["Anthony R. Slosar <contact@todomodo.io>"]
-license     = "Apache-2.0"
-repository  = "https://github.com/toneron2/urge"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+keywords.workspace     = true
+readme.workspace       = true
+categories.workspace   = true
 
 [features]
 default = ["alloc"]
@@ -14,7 +18,7 @@ std     = ["alloc", "urge-core/std"]
 serde   = ["urge-core/serde", "dep:serde"]
 
 [dependencies]
-urge-core = { path = "../urge-core", version = "0.1.0" }
+urge-core = { path = "../urge-core", version = "0.1.1" }
 serde     = { version = "1", features = ["derive"], optional = true }
 heapless  = { version = "0.8", default-features = false }
 log       = { version = "0.4", default-features = false }

@@ -1,11 +1,15 @@
 [package]
 name        = "urge-meta"
 description = "URGE meta-engine: Figure 26 pipeline — tokenizer, paradigm router, cross-validator, verdict synthesizer"
-version     = "0.1.0"
-edition     = "2021"
-authors     = ["Anthony R. Slosar <contact@todomodo.io>"]
-license     = "Apache-2.0"
-repository  = "https://github.com/toneron2/urge"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+keywords.workspace     = true
+readme.workspace       = true
+categories.workspace   = true
 
 [features]
 default = ["alloc", "regex"]
@@ -15,8 +19,8 @@ regex   = ["dep:regex", "std"]
 serde   = ["urge-core/serde", "urge-engines/serde", "dep:serde"]
 
 [dependencies]
-urge-core    = { path = "../urge-core",    version = "0.1.0" }
-urge-engines = { path = "../urge-engines", version = "0.1.0" }
+urge-core    = { path = "../urge-core",    version = "0.1.1" }
+urge-engines = { path = "../urge-engines", version = "0.1.1" }
 serde        = { version = "1", features = ["derive"], optional = true }
 regex        = { version = "1", default-features = false, features = ["std"], optional = true }
 heapless     = { version = "0.8", default-features = false }

@@ -1,11 +1,15 @@
 [package]
 name        = "urge-runtime"
 description = "URGE runtime: std-tier public API, audit log, event bus, and integration facades"
-version     = "0.1.0"
-edition     = "2021"
-authors     = ["Anthony R. Slosar <contact@todomodo.io>"]
-license     = "Apache-2.0"
-repository  = "https://github.com/toneron2/urge"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+keywords.workspace     = true
+readme.workspace       = true
+categories             = ["algorithms"]
 
 [features]
 default = ["std"]
@@ -33,10 +37,10 @@ healthcare = []   # enables HIPAA/clinical policy helpers
 embedded   = []   # tightens defaults for embedded targets
 
 [dependencies]
-urge-core    = { path = "../urge-core",    version = "0.1.0" }
-urge-engines = { path = "../urge-engines", version = "0.1.0" }
-urge-meta    = { path = "../urge-meta",    version = "0.1.0" }
-urge-monitor = { path = "../urge-monitor", version = "0.1.0" }
+urge-core    = { path = "../urge-core",    version = "0.1.1" }
+urge-engines = { path = "../urge-engines", version = "0.1.1" }
+urge-meta    = { path = "../urge-meta",    version = "0.1.1" }
+urge-monitor = { path = "../urge-monitor", version = "0.1.1" }
 serde        = { version = "1", features = ["derive"], optional = true }
 serde_json   = { version = "1", optional = true }
 heapless     = { version = "0.8", default-features = false }

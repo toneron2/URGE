@@ -3,7 +3,7 @@
 [![CI](https://github.com/toneron2/URGE/actions/workflows/ci.yml/badge.svg)](https://github.com/toneron2/URGE/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Rust 1.70+](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
-![Status: v0.1.0](https://img.shields.io/badge/status-v0.1.0-brightgreen.svg)
+![Status: v0.1.1](https://img.shields.io/badge/status-v0.1.1-brightgreen.svg)
 
 **LLM agents can act — but they can't prove why an action was allowed.**
 URGE is a deterministic governance gate: wrap any agent action in a formal

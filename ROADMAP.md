@@ -1,16 +1,23 @@
 # URGE — Status & Roadmap
 
-_Last updated: 2026-07-11_
+_Last updated: 2026-07-19_
 
-## Current status: v0.1.0 (initial public release)
+## Current status: v0.1.1
 
 The **`std` / `alloc` tiers are complete and tested.** URGE compiles clean,
 passes its full test suite, and is lint- and format-clean.
 
+v0.1.1 (2026-07-19): relicensed to Apache-2.0 (patent language removed
+everywhere), README repositioned around the AI-agent governance gate, and a
+router fix so mixed-paradigm expressions (`must x and always y`) evaluate via
+per-paradigm fragments instead of failing — this was a real v0.1.0 defect
+caught while verifying the README examples. crates.io metadata is ready
+(`docs/PUBLISHING.md`).
+
 | Area | State |
 |------|-------|
 | Workspace (`urge-core`, `-engines`, `-meta`, `-monitor`, `-runtime`) | ✅ builds clean |
-| Tests | ✅ 35 passing (unit + doctests + 19 end-to-end integration) |
+| Tests | ✅ 41 passing (unit + doctests + 24 end-to-end integration) |
 | `clippy -D warnings` | ✅ clean (default **and** `--all-features`) |
 | `rustfmt` | ✅ clean |
 | `serde` feature | ✅ functional (Serialize for zero-alloc trace/verdict types) |
@@ -37,9 +44,9 @@ Until then, the embedded story is marked experimental in the README, the
 
 1. **Heap-free AST** — arena/index representation so the `no_std` tier compiles
    and the embedded/BIOS claims become real. (Biggest item.)
-2. **Publish to crates.io** — free, and the main discovery channel for Rust
-   crates (auto-builds docs on docs.rs). Requires claiming the `urge-*` names
-   and a crates.io token. _Irreversible name claim — do intentionally._
+2. **Publish to crates.io** — metadata ready, names confirmed free, steps in
+   [`docs/PUBLISHING.md`](docs/PUBLISHING.md). Needs Tony's `cargo login`.
+   _Irreversible name claim — do intentionally._
 3. **Benchmarks** — the `benches/` dir is empty; add Criterion benches to back
    the latency claims in the README.
 4. **More worked examples** — port the two quarantined pre-Feb examples

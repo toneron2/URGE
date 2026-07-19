@@ -9,20 +9,21 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version       = "0.1.0"
+version       = "0.1.1"
 edition       = "2021"
 rust-version  = "1.70"
 authors       = ["Anthony R. Slosar <contact@todomodo.io>"]
 license       = "Apache-2.0"
-repository    = "https://github.com/toneron2/urge"
-keywords      = ["governance", "formal-logic", "reasoning", "deontic", "embedded"]
+repository    = "https://github.com/toneron2/URGE"
+keywords      = ["logic", "policy", "governance", "deontic", "temporal"]
 categories    = ["no-std", "algorithms"]
+readme        = "README.md"
 
 [workspace.dependencies]
-urge-core    = { path = "crates/urge-core",    version = "0.1.0" }
-urge-engines = { path = "crates/urge-engines", version = "0.1.0" }
-urge-meta    = { path = "crates/urge-meta",    version = "0.1.0" }
-urge-monitor = { path = "crates/urge-monitor", version = "0.1.0" }
+urge-core    = { path = "crates/urge-core",    version = "0.1.1" }
+urge-engines = { path = "crates/urge-engines", version = "0.1.1" }
+urge-meta    = { path = "crates/urge-meta",    version = "0.1.1" }
+urge-monitor = { path = "crates/urge-monitor", version = "0.1.1" }
 serde        = { version = "1",    features = ["derive"] }
 regex        = { version = "1",    default-features = false, features = ["std"] }
 smallvec     = { version = "1.11", default-features = false }
