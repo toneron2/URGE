@@ -1,8 +1,9 @@
 //! Stage 6: Cross-System Validator — the architecture's key differentiator.
 //!
 //! After each engine produces its verdict, the validator checks that the results
-//! are **mutually consistent** across paradigms. This is the step that traditional
-//! policy engines (OPA, Drools, REGO) completely lack.
+//! are **mutually consistent** across paradigms. Traditional policy engines
+//! evaluate rules within a single logic; this stage cross-checks results
+//! *between* logics and reports contradictions instead of silently resolving them.
 //!
 //! ## Consistency rules
 //!
