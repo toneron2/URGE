@@ -6,7 +6,7 @@
 //! > it can be built without a heap. Tracked as future work.
 //!
 //! Zero-allocation, stack-only governance for bare-metal and RTOS targets.
-//! This is the "governance chip" concept from the patent: a tiny deterministic
+//! This is the "governance chip" concept: a tiny deterministic
 //! core that mediates all device capability access.
 //!
 //! ## Target footprint

@@ -10,7 +10,7 @@
 //! T+90000s: Simulated timeout — obligation would have VIOLATED
 //!
 //! Every decision is fully auditable, traceable to clinical/regulatory sources.
-//! This is the governance layer described in the provisional patent applied
+//! This is the URGE governance layer applied
 //! to the BROAD healthcare ERP architecture.
 
 use urge::{

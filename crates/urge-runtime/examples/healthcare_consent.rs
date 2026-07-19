@@ -6,8 +6,8 @@
 //! 3. Advancing time and detecting violations
 //! 4. Satisfying the obligation via an action event
 //!
-//! This maps directly to the healthcare ERP agentic scenario described in
-//! the patent: obligation-driven governance over a clinical event stream.
+//! This maps directly to the healthcare ERP agentic scenario that motivated
+//! the design: obligation-driven governance over a clinical event stream.
 
 use urge_runtime::healthcare::HealthcareGovernor;
 

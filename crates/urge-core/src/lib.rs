@@ -4,10 +4,10 @@
 //!
 //! ## Architecture
 //!
-//! Based on the provisional patent "Unicode Semantic Dictionary and Multi-Logic
-//! Processing Architecture for Modular Reasoning Systems" (TODOMODO.IO AGENCY LLC,
-//! Anthony R. Slosar). The core concept, captured in **Figure 26** of the patent,
-//! is a deterministic pipeline:
+//! URGE implements a Unicode semantic dictionary and multi-logic processing
+//! architecture for modular reasoning systems. The core concept — the
+//! **Figure 26** Adaptive Processing Workflow, named for the diagram in the
+//! original design document — is a deterministic pipeline:
 //!
 //! ```text
 //! Input

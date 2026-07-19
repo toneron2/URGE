@@ -1,7 +1,7 @@
 //! BIOS Chip Governance Example
 //!
 //! Demonstrates URGE operating as a firmware-level governance primitive —
-//! the "BIOS-like capability running in a chip" described in the patent.
+//! the "BIOS-like capability running in a chip" from the original design.
 //!
 //! In a real embedded deployment:
 //! - This would compile with `--no-default-features --features alloc`

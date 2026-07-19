@@ -1,4 +1,4 @@
-//! Stage 6: Cross-System Validator — the key patent innovation.
+//! Stage 6: Cross-System Validator — the architecture's key differentiator.
 //!
 //! After each engine produces its verdict, the validator checks that the results
 //! are **mutually consistent** across paradigms. This is the step that traditional

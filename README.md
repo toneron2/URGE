@@ -1,13 +1,9 @@
 # URGE — Universal Reasoning Governance Engine
 
 [![CI](https://github.com/toneron2/URGE/actions/workflows/ci.yml/badge.svg)](https://github.com/toneron2/URGE/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Rust 1.70+](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 ![Status: v0.1.0](https://img.shields.io/badge/status-v0.1.0-brightgreen.svg)
-
-> **Patent pending.** Core architecture covered by provisional patent application  
-> *"Unicode Semantic Dictionary and Multi-Logic Processing Architecture for  
-> Modular Reasoning Systems"* — TODOMODO.IO AGENCY LLC / Anthony R. Slosar
 
 URGE is a **formal, deterministic governance layer** that can be embedded into
 any system requiring auditable, reasoning-driven access control and policy
@@ -24,7 +20,7 @@ Every AI agent system today has the same gap: **capability without governance**.
 Traditional policy engines:   Request → Evaluate → Allow/Deny   (stateless, single logic)
 LLM alignment:                Behavioral, implicit, non-auditable, learned
 URGE:                         Event → Multi-Paradigm Reasoning → Auditable Verdict
-                              Deterministic · Formal · Edge-capable · Patent-pending
+                              Deterministic · Formal · Edge-capable · Auditable
 ```
 
 When a healthcare agent recommends a medication change, you must be able to answer:
@@ -36,8 +32,9 @@ to the regulatory source that justified the decision.
 
 ## Architecture — Figure 26 Pipeline
 
-The core of URGE is the **Adaptive Processing Workflow** described in Figure 26
-of the provisional patent, implemented in `urge-meta`:
+The core of URGE is the **Adaptive Processing Workflow** — the Figure 26
+pipeline, named for the diagram in the original design document — implemented
+in `urge-meta`:
 
 ```
 INPUT (governance expression or event)
@@ -65,7 +62,7 @@ INPUT (governance expression or event)
 │   Each selected engine evaluates its AST fragment                │
 │   Returns partial Verdict: result + confidence + trace           │
 ├──────────────────────────────────────────────────────────────────┤
-│ STAGE 6: CROSS-SYSTEM VALIDATION  ◄── KEY PATENT INNOVATION      │
+│ STAGE 6: CROSS-SYSTEM VALIDATION  ◄── DIFFERENTIATOR             │
 │   Inter-paradigm consistency checking across all engine results  │
 │   Contradiction detection: Modal vs Boolean, Temporal vs Deontic │
 │   No equivalent exists in OPA, Drools, REGO, or any OSS system  │
@@ -339,25 +336,12 @@ This is implemented in `urge-monitor::obligation::ObligationManager`.
 
 ---
 
-## Intellectual Property
-
-**Patent pending.** This architecture is covered by a provisional patent
-application filed by TODOMODO.IO AGENCY LLC (Anthony R. Slosar).
-
-The reference implementation in this repository is **MIT licensed**. The core
-architectural innovations — Unicode Semantic Dictionary, multi-paradigm
-synthesis with cross-system validation, deontic obligation lifecycle management
-combined with temporal LTL monitoring — are **patent-pending** and require
-a separate license for commercial use.
-
-Contact: https://t.me/toneron2  
-See [`LICENSE`](LICENSE) for full terms including the patent notice.
-
----
-
 ## License
 
-MIT — © 2025 TODOMODO.IO AGENCY LLC / Anthony R. Slosar
+Apache-2.0 — © 2025 TODOMODO.IO AGENCY LLC / Anthony R. Slosar
+
+Apache 2.0 includes an explicit patent grant: you can use, modify, and ship
+URGE commercially without asking.
 
 ---
 

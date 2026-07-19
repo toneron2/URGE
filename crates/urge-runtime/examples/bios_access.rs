@@ -1,6 +1,6 @@
 //! BIOS-level access control governance.
 //!
-//! Demonstrates the "governance chip" concept from the patent: a tiny,
+//! Demonstrates the "governance chip" concept: a tiny,
 //! deterministic core that governs device capability access with no
 //! inference, no heap allocation in the hot path, and full auditability.
 //!

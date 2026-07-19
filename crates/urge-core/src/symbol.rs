@@ -2,7 +2,7 @@
 //!
 //! Maps Unicode codepoints (and ASCII keyword aliases) to their semantic class
 //! within one or more logic paradigms. This is the "300+ operator" dictionary
-//! referenced in the patent.
+//! at the foundation of the architecture.
 //!
 //! The dictionary is a **static, compile-time table** — zero runtime allocation,
 //! suitable for ROM-resident firmware.
@@ -174,7 +174,7 @@ pub struct Symbol {
 
 /// The static Unicode Semantic Dictionary.
 ///
-/// **This table IS the patent innovation at the data layer.** Every operator
+/// **This table IS the architecture at the data layer.** Every operator
 /// from 15+ logic paradigms is represented. The router uses it to classify
 /// every token in an incoming expression before engine selection.
 pub struct UnicodeSemanticDictionary;

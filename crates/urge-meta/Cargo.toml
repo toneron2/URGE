@@ -4,7 +4,7 @@ description = "URGE meta-engine: Figure 26 pipeline — tokenizer, paradigm rout
 version     = "0.1.0"
 edition     = "2021"
 authors     = ["Anthony R. Slosar <contact@todomodo.io>"]
-license     = "MIT"
+license     = "Apache-2.0"
 repository  = "https://github.com/toneron2/urge"
 
 [features]

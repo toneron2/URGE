@@ -105,5 +105,5 @@ fn main() {
     println!("  Every agent action is gated by formal logic, not behavioral alignment.");
     println!("  The governance layer is: deterministic, auditable, sub-millisecond.");
     println!("  No LLM inference involved in permit/deny decisions.");
-    println!("  This is the patent architecture operating as designed.");
+    println!("  This is the URGE architecture operating as designed.");
 }

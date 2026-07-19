@@ -1,7 +1,8 @@
 //! # urge-meta — The Figure 26 Pipeline
 //!
 //! This crate is the operational heart of URGE: it implements the complete
-//! Adaptive Processing Workflow from the patent's Figure 26.
+//! Adaptive Processing Workflow — the Figure 26 pipeline, named for the
+//! diagram in the original design document.
 //!
 //! ## Pipeline stages (direct mapping to Figure 26)
 //!
@@ -30,7 +31,7 @@
 //! │    Each selected engine evaluates its portion of the AST             │
 //! │    Returns partial Verdict with local confidence and trace           │
 //! ├──────────────────────────────────────────────────────────────────────┤
-//! │  STAGE 6: CROSS-SYSTEM VALIDATION                   ◄── KEY PATENT  │
+//! │  STAGE 6: CROSS-SYSTEM VALIDATION               ◄── DIFFERENTIATOR  │
 //! │    All engine verdicts checked for inter-paradigm consistency        │
 //! │    Contradictions detected, flagged, and resolved                    │
 //! ├──────────────────────────────────────────────────────────────────────┤
