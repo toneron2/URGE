@@ -115,7 +115,7 @@ fn eval_temporal(
                 SemanticClass::Finally => {
                     // F(φ) with bound: must happen by deadline.
                     // Without bound: optimistically true (future is open).
-                    let within_deadline = bound_ns.is_none_or(|d| now <= d);
+                    let within_deadline = bound_ns.map_or(true, |d| now <= d);
                     let body_result = crate::boolean::BooleanEngine.evaluate(body, ctx)?;
                     let valid = body_result.valid || within_deadline;
                     trace.push(TraceEntry {
