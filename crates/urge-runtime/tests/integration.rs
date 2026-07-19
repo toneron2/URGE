@@ -268,3 +268,93 @@ fn test_cross_validation_consistent_for_simple_boolean() {
     assert!(v.cross_validation.consistent);
     assert_eq!(v.cross_validation.conflicts_detected, 0);
 }
+
+// ── Mixed-paradigm expressions (router fragment decomposition) ────────────────
+//
+// The README's flagship expression combines a deontic obligation and a
+// temporal constraint under a boolean `and`. Before the router learned to
+// decompose connectives into paradigm fragments, these expressions denied
+// with a phantom "no engines succeeded" conflict regardless of context.
+
+fn gate_ctx(authorized: bool, audit_running: bool) -> EvalContext<'static> {
+    let slots: &'static [(&'static str, ContextValue)] = match (authorized, audit_running) {
+        (true, true) => &[
+            ("authorized", ContextValue::Bool(true)),
+            ("audit_running", ContextValue::Bool(true)),
+        ],
+        (true, false) => &[
+            ("authorized", ContextValue::Bool(true)),
+            ("audit_running", ContextValue::Bool(false)),
+        ],
+        (false, true) => &[
+            ("authorized", ContextValue::Bool(false)),
+            ("audit_running", ContextValue::Bool(true)),
+        ],
+        (false, false) => &[
+            ("authorized", ContextValue::Bool(false)),
+            ("audit_running", ContextValue::Bool(false)),
+        ],
+    };
+    EvalContext {
+        slots,
+        logical_time: 0,
+        depth_limit: 16,
+    }
+}
+
+const GATE_EXPR: &str = "must authorized and always audit_running";
+
+#[test]
+fn test_mixed_deontic_temporal_permitted() {
+    let p = GovernancePipeline::new(PipelineConfig::healthcare());
+    let v = p.evaluate_str(GATE_EXPR, &gate_ctx(true, true));
+    assert!(v.valid, "all conditions true must permit: {v:?}");
+    assert!(v.cross_validation.consistent);
+    assert_eq!(v.cross_validation.conflicts_detected, 0);
+    assert_eq!(
+        v.formal_notation.as_str(),
+        "O(authorized) ∧ G(audit_running)"
+    );
+}
+
+#[test]
+fn test_mixed_deontic_temporal_audit_down_denied_with_conflict() {
+    let p = GovernancePipeline::new(PipelineConfig::healthcare());
+    let v = p.evaluate_str(GATE_EXPR, &gate_ctx(true, false));
+    assert!(!v.valid, "audit trail down must deny");
+    // The deny is a *real* cross-paradigm finding: temporal constraint
+    // violated while the deontic obligation is active.
+    assert!(!v.cross_validation.consistent);
+    assert!(v.cross_validation.conflicts_detected >= 1);
+}
+
+#[test]
+fn test_mixed_deontic_temporal_unauthorized_denied() {
+    let p = GovernancePipeline::new(PipelineConfig::healthcare());
+    let v = p.evaluate_str(GATE_EXPR, &gate_ctx(false, true));
+    assert!(!v.valid, "unauthorized must deny (deontic override)");
+}
+
+#[test]
+fn test_mixed_two_deontic_conjuncts() {
+    let p = GovernancePipeline::new(PipelineConfig::healthcare());
+    let slots = &[
+        ("authorized", ContextValue::Bool(true)),
+        ("verified_order", ContextValue::Bool(false)),
+    ];
+    let ctx = EvalContext {
+        slots,
+        logical_time: 0,
+        depth_limit: 16,
+    };
+    let v = p.evaluate_str("must authorized and must verified_order", &ctx);
+    assert!(!v.valid, "one unmet obligation must deny the conjunction");
+}
+
+#[test]
+fn test_mixed_expression_default_config() {
+    // The decomposition must not depend on exhaustive evaluation.
+    let p = GovernancePipeline::new(PipelineConfig::default());
+    let v = p.evaluate_str(GATE_EXPR, &gate_ctx(true, true));
+    assert!(v.valid, "default config must also permit: {v:?}");
+}
