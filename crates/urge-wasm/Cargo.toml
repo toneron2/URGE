@@ -1,0 +1,20 @@
+[package]
+name        = "urge-wasm"
+description = "wasm-bindgen wrapper for the URGE browser demo (docs/demo/) — not published to crates.io"
+publish     = false
+version.workspace    = true
+edition.workspace    = true
+authors.workspace    = true
+license.workspace    = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+urge-core    = { path = "../urge-core", version = "0.1.1", features = ["std", "serde"] }
+urge-engines = { path = "../urge-engines", version = "0.1.1", features = ["std", "serde"] }
+urge-meta    = { path = "../urge-meta", version = "0.1.1", features = ["std", "serde"] }
+# Must match the wasm-bindgen CLI version used to generate the JS glue.
+wasm-bindgen = "=0.2.126"
+serde_json   = "1"

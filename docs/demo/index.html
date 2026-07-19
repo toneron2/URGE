@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>URGE — live governance gate demo</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --fg: #e6edf3; --dim: #8b949e; --accent: #58a6ff;
+    --permit: #3fb950; --deny: #f85149; --warn: #d29922;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f8fa; --panel: #ffffff; --border: #d0d7de;
+      --fg: #1f2328; --dim: #656d76; --accent: #0969da;
+      --permit: #1a7f37; --deny: #cf222e; --warn: #9a6700;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h1 .v { color: var(--dim); font-weight: normal; font-size: 14px; }
+  .sub { color: var(--dim); margin: 0 0 20px; font-size: 13px; }
+  .sub a { color: var(--accent); text-decoration: none; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; margin-bottom: 14px;
+  }
+  label.head { display: block; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--dim); margin-bottom: 8px; }
+  #expr {
+    width: 100%; background: var(--bg); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; font: inherit; font-size: 16px;
+  }
+  #expr:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .presets { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .presets button {
+    background: none; border: 1px solid var(--border); color: var(--dim);
+    border-radius: 999px; padding: 3px 12px; font: inherit; font-size: 12px;
+    cursor: pointer;
+  }
+  .presets button:hover { color: var(--fg); border-color: var(--accent); }
+  #slots { display: flex; flex-wrap: wrap; gap: 10px; }
+  .slot {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px;
+    cursor: pointer; user-select: none;
+  }
+  .slot .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); }
+  .slot.on .dot { background: var(--permit); }
+  .slot.on { border-color: var(--permit); }
+  .slot .val { color: var(--dim); font-size: 12px; }
+  .slot.on .val { color: var(--permit); }
+  #slots .none { color: var(--dim); font-size: 13px; }
+  .verdict-row { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  #verdict { font-size: 28px; font-weight: bold; }
+  #verdict.permit { color: var(--permit); }
+  #verdict.deny { color: var(--deny); }
+  #conf, #time { color: var(--dim); font-size: 13px; }
+  #notation { font-size: 18px; margin: 10px 0 2px; color: var(--accent); overflow-x: auto; }
+  #consistency { font-size: 13px; margin-top: 6px; }
+  #consistency.ok { color: var(--permit); }
+  #consistency.conflict { color: var(--warn); }
+  #trace { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  #trace li { padding: 2px 0 2px 0; display: flex; gap: 10px; }
+  #trace .stage { color: var(--dim); min-width: 150px; flex-shrink: 0; }
+  #trace li.conflict .desc { color: var(--warn); }
+  #trace li.routed .desc { color: var(--accent); }
+  #error { color: var(--deny); font-size: 13px; white-space: pre-wrap; }
+  details summary { cursor: pointer; color: var(--dim); font-size: 13px; }
+  footer { color: var(--dim); font-size: 12px; margin-top: 28px; }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>URGE <span class="v" id="version">loading…</span></h1>
+  <p class="sub">
+    A deterministic governance gate: formal multi-paradigm logic, running as
+    WebAssembly in your browser. Nothing leaves this page.
+    <a href="https://github.com/toneron2/URGE">Source &amp; docs →</a>
+  </p>
+
+  <div class="panel">
+    <label class="head" for="expr">Governance expression</label>
+    <input id="expr" spellcheck="false" autocomplete="off"
+           value="must authorized and always audit_running">
+    <div class="presets">
+      <button data-expr="must authorized and always audit_running" data-set="authorized:1,audit_running:1">agent gate — permit</button>
+      <button data-expr="must authorized and always audit_running" data-set="authorized:1,audit_running:0">audit down — conflict</button>
+      <button data-expr="must authorized and must verified_order" data-set="authorized:1,verified_order:0">unmet obligation — deny</button>
+      <button data-expr="not forbidden_action or eventually reviewed" data-set="forbidden_action:0,reviewed:0">disjunction</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <label class="head">Context slots (click to toggle — identifiers found in the expression)</label>
+    <div id="slots"></div>
+  </div>
+
+  <div class="panel">
+    <label class="head">Verdict</label>
+    <div id="error" hidden></div>
+    <div class="verdict-row">
+      <span id="verdict"></span>
+      <span id="conf"></span>
+      <span id="time"></span>
+    </div>
+    <div id="notation"></div>
+    <div id="consistency"></div>
+  </div>
+
+  <div class="panel">
+    <details open>
+      <summary>Full reasoning trace — this is the audit record</summary>
+      <ul id="trace" style="margin-top:10px"></ul>
+    </details>
+  </div>
+
+  <footer>
+    URGE — Universal Reasoning Governance Engine · Apache-2.0 ·
+    <a href="https://github.com/toneron2/URGE">github.com/toneron2/URGE</a> ·
+    evaluation is fully client-side WebAssembly
+  </footer>
+</div>
+
+<script type="module">
+import init, { evaluate_str, version } from "./pkg/urge_wasm.js";
+
+const KEYWORDS = new Set([
+  "must","may","must_not","should","ought","permitted","allowed","forbidden",
+  "obligatory","always","globally","eventually","finally","until","before",
+  "deadline","next","and","or","not","xor","implies","iff","true","false",
+  "knows","believes","necessarily","possibly","likely","probability","common",
+]);
+
+const slotState = Object.create(null);
+const $ = (id) => document.getElementById(id);
+
+function identifiers(expr) {
+  const ids = [];
+  for (const m of expr.toLowerCase().matchAll(/[a-z_][a-z0-9_]*/g)) {
+    const w = m[0];
+    if (!KEYWORDS.has(w) && !ids.includes(w)) ids.push(w);
+  }
+  return ids;
+}
+
+function renderSlots(ids) {
+  const box = $("slots");
+  box.innerHTML = "";
+  if (!ids.length) {
+    box.innerHTML = '<span class="none">no identifiers — expression uses only literals</span>';
+    return;
+  }
+  for (const id of ids) {
+    if (!(id in slotState)) slotState[id] = true;
+    const el = document.createElement("div");
+    el.className = "slot" + (slotState[id] ? " on" : "");
+    el.innerHTML = `<span class="dot"></span><span>${id}</span><span class="val">${slotState[id]}</span>`;
+    el.onclick = () => { slotState[id] = !slotState[id]; run(); };
+    box.appendChild(el);
+  }
+}
+
+function run() {
+  const expr = $("expr").value;
+  const ids = identifiers(expr);
+  renderSlots(ids);
+
+  const ctx = {};
+  for (const id of ids) ctx[id] = slotState[id];
+
+  const t0 = performance.now();
+  const raw = evaluate_str(expr, JSON.stringify(ctx));
+  const dt = performance.now() - t0;
+  const v = JSON.parse(raw);
+
+  const err = $("error");
+  if (v.error) {
+    err.hidden = false; err.textContent = v.error;
+    $("verdict").textContent = ""; $("conf").textContent = "";
+    $("time").textContent = ""; $("notation").textContent = "";
+    $("consistency").textContent = ""; $("trace").innerHTML = "";
+    return;
+  }
+  err.hidden = true;
+
+  const verdict = $("verdict");
+  verdict.textContent = v.valid ? "PERMIT ✓" : "DENY ✗";
+  verdict.className = v.valid ? "permit" : "deny";
+  $("conf").textContent = `confidence ${Math.round((v.confidence / 255) * 100)}%`;
+  $("time").textContent = `evaluated in ${dt.toFixed(2)} ms`;
+  $("notation").textContent = v.formal_notation && v.formal_notation !== "(no notation)"
+    ? v.formal_notation : "";
+
+  const cv = v.cross_validation ?? {};
+  const cons = $("consistency");
+  if (cv.consistent) {
+    cons.className = "ok";
+    cons.textContent = "cross-paradigm validation: consistent";
+  } else {
+    cons.className = "conflict";
+    cons.textContent = `cross-paradigm CONFLICT (${cv.conflicts_detected ?? "?"})`
+      + (cv.conflict_detail ? ` — ${cv.conflict_detail}` : "");
+  }
+
+  const ul = $("trace");
+  ul.innerHTML = "";
+  for (const e of v.trace?.entries ?? []) {
+    const li = document.createElement("li");
+    const desc = e.description ?? "";
+    if (desc.startsWith("CONFLICT")) li.className = "conflict";
+    else if (e.outcome === "Routed") li.className = "routed";
+    li.innerHTML = `<span class="stage">[${e.stage}${e.paradigm ? ":" + e.paradigm : ""}]</span>`
+      + `<span class="desc"></span>`;
+    li.querySelector(".desc").textContent = desc;
+    ul.appendChild(li);
+  }
+}
+
+for (const b of document.querySelectorAll(".presets button")) {
+  b.onclick = () => {
+    $("expr").value = b.dataset.expr;
+    for (const pair of b.dataset.set.split(",")) {
+      const [k, val] = pair.split(":");
+      slotState[k] = val === "1";
+    }
+    run();
+  };
+}
+$("expr").addEventListener("input", run);
+
+await init();
+$("version").textContent = "v" + version() + " — live WASM demo";
+run();
+</script>
+</body>
+</html>

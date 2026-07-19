@@ -5,6 +5,10 @@
 [![Rust 1.70+](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 ![Status: v0.1.1](https://img.shields.io/badge/status-v0.1.1-brightgreen.svg)
 
+**[▶ Live demo](https://toneron2.github.io/URGE/demo/)** — type a governance
+expression, flip context slots, watch the verdict, formal notation, and full
+reasoning trace update. Pure client-side WebAssembly.
+
 **LLM agents can act — but they can't prove why an action was allowed.**
 URGE is a deterministic governance gate: wrap any agent action in a formal
 policy check and get back an auditable verdict with a full reasoning trace.

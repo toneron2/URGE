@@ -5,6 +5,7 @@ members = [
     "crates/urge-meta",
     "crates/urge-monitor",
     "crates/urge-runtime",
+    "crates/urge-wasm",
 ]
 resolver = "2"
 
