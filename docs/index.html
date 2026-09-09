@@ -1,0 +1,102 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>URGE — Universal Reasoning Governance Engine</title>
+<meta name="description" content="A deterministic governance gate for AI agents. Wrap any agent action in a formal policy check and get back an auditable verdict with a full reasoning trace.">
+<meta property="og:title" content="URGE — Universal Reasoning Governance Engine">
+<meta property="og:description" content="LLM agents can act, but they cannot prove why an action was allowed. URGE is a deterministic governance gate with a full reasoning trace.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://toneron2.github.io/URGE/">
+<style>
+  /* Same tokens as the demo, so the two pages read as one site. */
+  :root{--bg:#f6f8fa;--panel:#fff;--border:#d0d7de;--fg:#1f2328;--dim:#656d76;
+        --accent:#0969da;--permit:#1a7f37}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#e6edf3;--dim:#8b949e;
+          --accent:#58a6ff;--permit:#3fb950}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);line-height:1.6;
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:56px 20px 72px}
+  h1{font-size:2rem;margin:0 0 .2em;letter-spacing:-.02em}
+  h1 small{display:block;font-size:.9rem;font-weight:400;color:var(--dim);letter-spacing:0}
+  h2{font-size:1.05rem;margin:2.4em 0 .6em;text-transform:uppercase;letter-spacing:.08em;
+     color:var(--dim);font-weight:600}
+  p{margin:0 0 1em}
+  a{color:var(--accent)}
+  .lede{font-size:1.15rem}
+  .cta{display:inline-block;margin:.6em 0 .2em;padding:.7em 1.4em;border-radius:6px;
+       background:var(--accent);color:#fff;font-weight:600;text-decoration:none}
+  .cta:hover{filter:brightness(1.1)}
+  .cta-note{color:var(--dim);font-size:.9rem;margin-left:.8em}
+  .links{display:flex;flex-wrap:wrap;gap:10px;padding:0;list-style:none;margin:0}
+  .links li{flex:1 1 220px}
+  .links a{display:block;padding:14px 16px;border:1px solid var(--border);border-radius:6px;
+           background:var(--panel);text-decoration:none;color:var(--fg)}
+  .links a:hover{border-color:var(--accent)}
+  .links b{display:block;color:var(--accent)}
+  .links span{color:var(--dim);font-size:.88rem}
+  table{border-collapse:collapse;width:100%;font-size:.92rem}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);
+        vertical-align:top}
+  th{color:var(--dim);font-weight:600;font-size:.8rem;text-transform:uppercase;
+     letter-spacing:.05em}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
+  .ops{color:var(--permit)}
+  footer{margin-top:3em;padding-top:1.4em;border-top:1px solid var(--border);
+         color:var(--dim);font-size:.9rem}
+  .scroll{overflow-x:auto}
+</style>
+
+<div class="wrap">
+
+<h1>URGE
+  <small>Universal Reasoning Governance Engine &nbsp;·&nbsp; v0.1.1 &nbsp;·&nbsp; Rust &nbsp;·&nbsp; Apache-2.0</small>
+</h1>
+
+<p class="lede"><strong>LLM agents can act, but they cannot prove why an action was
+allowed.</strong> URGE is a deterministic governance gate: wrap any agent action in a formal
+policy check and get back an auditable verdict with a full reasoning trace.</p>
+
+<p>
+  <a class="cta" href="demo/">▶ Try the live demo</a>
+  <span class="cta-note">Runs entirely in your browser. No install, no sign-up.</span>
+</p>
+
+<h2>What you get back</h2>
+<p>A verdict — permitted or denied — with a confidence score, the formal notation the
+decision was expressed in, and citations for every step that produced it. The same policy
+evaluated twice gives the same answer, which is the point: a governance decision you cannot
+reproduce is not a governance decision.</p>
+
+<h2>Logic paradigms</h2>
+<div class="scroll">
+<table>
+  <tr><th>Paradigm</th><th>Operators</th><th>Governance role</th></tr>
+  <tr><td>Boolean</td><td class="ops"><code>∧ ∨ ¬ → ↔ ⊕</code></td><td>Base layer, all systems</td></tr>
+  <tr><td>Modal (S5)</td><td class="ops"><code>□ ◇</code></td><td>Access across system states</td></tr>
+  <tr><td>Epistemic</td><td class="ops"><code>K B C</code></td><td>Agent knowledge verification</td></tr>
+  <tr><td><strong>Deontic</strong></td><td class="ops"><code>O P F</code></td><td>Obligations and permissions</td></tr>
+  <tr><td><strong>Temporal (LTL)</strong></td><td class="ops"><code>G F X U</code></td><td>Deadline enforcement</td></tr>
+  <tr><td>Fuzzy</td><td class="ops"><code>μ ⊓ ⊔</code></td><td>Thresholds and uncertainty</td></tr>
+  <tr><td>Paraconsistent</td><td class="ops"><code>Belnap 4-valued</code></td><td>Contradiction without explosion</td></tr>
+  <tr><td>Probabilistic</td><td class="ops"><code>P(·)</code></td><td>Bayesian confidence — <em>planned, not implemented</em></td></tr>
+</table>
+</div>
+<p style="color:var(--dim);font-size:.9rem">Seven are implemented and cross-validated against
+each other. The eighth is on the roadmap and is listed here so the table is not read as a
+promise.</p>
+
+<h2>Read on</h2>
+<ul class="links">
+  <li><a href="https://github.com/toneron2/URGE"><b>Source on GitHub</b><span>Six crates, Apache-2.0, builds without an operating system</span></a></li>
+  <li><a href="ARCHITECTURE.md"><b>Architecture</b><span>The evaluation pipeline, stage by stage</span></a></li>
+  <li><a href="USE_CASES.md"><b>Use cases</b><span>What a governance gate is actually for</span></a></li>
+</ul>
+
+<footer>
+  Built by <a href="https://github.com/toneron2">Tony Slosar</a> ·
+  TODOMODO.IO AGENCY LLC · <a href="https://slosars.me">slosars.me</a>
+</footer>
+
+</div>
