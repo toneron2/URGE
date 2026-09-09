@@ -13,6 +13,9 @@ categories             = ["algorithms"]
 
 [features]
 default = ["std"]
+# Kept as a no-op alias: alloc is UNCONDITIONAL in this crate (audit.rs and
+# healthcare.rs need a heap), so `features = ["alloc"]` still resolves but
+# turning it off is not a configuration this crate has ever supported.
 alloc   = [
     "urge-core/alloc",
     "urge-engines/alloc",
@@ -37,10 +40,10 @@ healthcare = []   # enables HIPAA/clinical policy helpers
 embedded   = []   # tightens defaults for embedded targets
 
 [dependencies]
-urge-core    = { path = "../urge-core",    version = "0.1.1" }
-urge-engines = { path = "../urge-engines", version = "0.1.1" }
-urge-meta    = { path = "../urge-meta",    version = "0.1.1" }
-urge-monitor = { path = "../urge-monitor", version = "0.1.1" }
+urge-core    = { path = "../urge-core",    version = "0.1.2" }
+urge-engines = { path = "../urge-engines", version = "0.1.2" }
+urge-meta    = { path = "../urge-meta",    version = "0.1.2" }
+urge-monitor = { path = "../urge-monitor", version = "0.1.2" }
 serde        = { version = "1", features = ["derive"], optional = true }
 serde_json   = { version = "1", optional = true }
 heapless     = { version = "0.8", default-features = false }

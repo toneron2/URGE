@@ -4,10 +4,8 @@
 //! the governance system operated correctly. In healthcare: the log IS the
 //! compliance audit trail.
 
-use urge_core::decision::Verdict;
-
-#[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
+use urge_core::decision::Verdict;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

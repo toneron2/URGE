@@ -25,15 +25,15 @@
 //!
 //! ## No-std
 //!
-//! Default features enable `std`. For embedded targets disable them and enable
-//! `alloc`, which is the floor for this crate:
+//! Default features enable `std`. For embedded targets, turn them off:
 //!
 //! ```toml
-//! urge = { version = "0.1", default-features = false, features = ["alloc"] }
+//! urge = { version = "0.1", default-features = false }
 //! ```
 //!
-//! `alloc` is required, not optional: [`urge_runtime`] does not build without
-//! it. If you need the allocation-free tier, depend on
+//! That gives you `no_std` with `alloc`, which is this crate's floor. The heap
+//! is not optional here: the audit log and the healthcare obligation helpers
+//! both need it. If you want the allocation-free tier, depend on
 //! [`urge-core`](https://docs.rs/urge-core) directly rather than on this
 //! facade.
 //!

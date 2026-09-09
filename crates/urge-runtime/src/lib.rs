@@ -39,7 +39,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "alloc")]
+// `alloc` is UNCONDITIONAL here, not optional. audit.rs and healthcare.rs use String
+// and Vec with no feature gate, so a build without alloc never compiled -- gating this
+// line only made that failure look like a missing feature instead of a manifest error.
 extern crate alloc;
 
 pub mod audit;

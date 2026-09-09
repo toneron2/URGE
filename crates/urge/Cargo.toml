@@ -20,7 +20,7 @@ healthcare = ["urge-runtime/healthcare"]
 embedded   = ["urge-runtime/embedded"]
 
 [dependencies]
-urge-runtime = { path = "../urge-runtime", version = "0.1.1", default-features = false }
+urge-runtime = { path = "../urge-runtime", version = "0.1.2", default-features = false }
 
 [package.metadata.docs.rs]
 all-features = true

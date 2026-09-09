@@ -11,7 +11,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version       = "0.1.1"
+version       = "0.1.2"
 edition       = "2021"
 rust-version  = "1.70"
 authors       = ["Anthony R. Slosar <contact@todomodo.io>"]
@@ -22,10 +22,10 @@ categories    = ["no-std", "algorithms"]
 readme        = "README.md"
 
 [workspace.dependencies]
-urge-core    = { path = "crates/urge-core",    version = "0.1.1" }
-urge-engines = { path = "crates/urge-engines", version = "0.1.1" }
-urge-meta    = { path = "crates/urge-meta",    version = "0.1.1" }
-urge-monitor = { path = "crates/urge-monitor", version = "0.1.1" }
+urge-core    = { path = "crates/urge-core",    version = "0.1.2" }
+urge-engines = { path = "crates/urge-engines", version = "0.1.2" }
+urge-meta    = { path = "crates/urge-meta",    version = "0.1.2" }
+urge-monitor = { path = "crates/urge-monitor", version = "0.1.2" }
 serde        = { version = "1",    features = ["derive"] }
 regex        = { version = "1",    default-features = false, features = ["std"] }
 smallvec     = { version = "1.11", default-features = false }
