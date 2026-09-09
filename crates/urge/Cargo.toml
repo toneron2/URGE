@@ -1,0 +1,26 @@
+[package]
+name        = "urge"
+description = "URGE: a deterministic governance engine. Evaluate a policy decision across seven formal logics -- boolean, modal, epistemic, deontic, temporal, fuzzy and paraconsistent -- and get back an auditable verdict with a full reasoning trace. Facade for urge-runtime."
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+keywords.workspace     = true
+categories.workspace   = true
+readme.workspace       = true
+
+[features]
+default    = ["std"]
+alloc      = ["urge-runtime/alloc"]
+std        = ["urge-runtime/std"]
+serde      = ["urge-runtime/serde"]
+healthcare = ["urge-runtime/healthcare"]
+embedded   = ["urge-runtime/embedded"]
+
+[dependencies]
+urge-runtime = { path = "../urge-runtime", version = "0.1.1", default-features = false }
+
+[package.metadata.docs.rs]
+all-features = true

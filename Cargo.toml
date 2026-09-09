@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/urge",
     "crates/urge-core",
     "crates/urge-engines",
     "crates/urge-meta",
