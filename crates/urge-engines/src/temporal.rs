@@ -146,7 +146,7 @@ fn eval_temporal(
                         description: "X(φ): deferred to next evaluation cycle",
                         outcome: EntryOutcome::Evaluated,
                     });
-                    Ok((true, "X(…)".to_string()))
+                    Ok((true, "X(…)".into()))
                 }
 
                 _ => Err(EngineError::UnsupportedNode),

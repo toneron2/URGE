@@ -172,7 +172,7 @@ fn eval_bool(
 #[cfg(feature = "alloc")]
 fn format_notation(node: &AstNode) -> alloc::string::String {
     match node.as_ref() {
-        Expr::Lit(Literal::Bool(b)) => (if *b { "⊤" } else { "⊥" }).to_string(),
+        Expr::Lit(Literal::Bool(b)) => (if *b { "⊤" } else { "⊥" }).into(),
         Expr::Lit(Literal::Integer(n)) => alloc::format!("{n}"),
         Expr::Var { name, .. } => name.as_str().into(),
         Expr::Unary {

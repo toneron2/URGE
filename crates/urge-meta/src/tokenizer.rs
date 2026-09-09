@@ -29,6 +29,7 @@ use urge_core::{
 };
 
 #[cfg(feature = "alloc")]
+use alloc::string::ToString;
 use alloc::vec::Vec;
 
 /// Tokenizes an input string into a classified token stream.
