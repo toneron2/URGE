@@ -46,6 +46,9 @@
   footer{margin-top:3em;padding-top:1.4em;border-top:1px solid var(--border);
          color:var(--dim);font-size:.9rem}
   .scroll{overflow-x:auto}
+  .install{margin-top:.2em}
+  .install code{background:var(--panel);border:1px solid var(--border);
+                border-radius:5px;padding:.35em .6em;font-size:.95em}
 </style>
 
 <div class="wrap">
@@ -61,6 +64,11 @@ policy check and get back an auditable verdict with a full reasoning trace.</p>
 <p>
   <a class="cta" href="demo/">▶ Try the live demo</a>
   <span class="cta-note">Runs entirely in your browser. No install, no sign-up.</span>
+</p>
+
+<p class="install">Then add it to a project:
+  <code>cargo add urge</code>
+  <span class="cta-note">Apache-2.0 · seven crates on <a href="https://crates.io/crates/urge">crates.io</a></span>
 </p>
 
 <h2>What you get back</h2>
@@ -89,7 +97,9 @@ promise.</p>
 
 <h2>Read on</h2>
 <ul class="links">
-  <li><a href="https://github.com/toneron2/URGE"><b>Source on GitHub</b><span>Six crates, Apache-2.0, builds without an operating system</span></a></li>
+  <li><a href="https://crates.io/crates/urge"><b>crates.io</b><span><code>cargo add urge</code> — the facade crate, or take a narrower one</span></a></li>
+  <li><a href="https://docs.rs/urge"><b>API documentation</b><span>Built automatically on docs.rs for every release</span></a></li>
+  <li><a href="https://github.com/toneron2/URGE"><b>Source on GitHub</b><span>Six crates, Apache-2.0, no operating system required</span></a></li>
   <li><a href="https://github.com/toneron2/URGE/blob/main/docs/ARCHITECTURE.md"><b>Architecture</b><span>The evaluation pipeline, stage by stage</span></a></li>
   <li><a href="https://github.com/toneron2/URGE/blob/main/docs/USE_CASES.md"><b>Use cases</b><span>What a governance gate is actually for</span></a></li>
 </ul>
