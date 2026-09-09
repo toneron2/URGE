@@ -3,7 +3,8 @@
 [![CI](https://github.com/toneron2/URGE/actions/workflows/ci.yml/badge.svg)](https://github.com/toneron2/URGE/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Rust 1.70+](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
-![Status: v0.1.1](https://img.shields.io/badge/status-v0.1.1-brightgreen.svg)
+[![crates.io](https://img.shields.io/crates/v/urge.svg)](https://crates.io/crates/urge)
+[![docs.rs](https://img.shields.io/docsrs/urge)](https://docs.rs/urge)
 
 **[▶ Live demo](https://toneron2.github.io/URGE/demo/)** — type a governance
 expression, flip context slots, watch the verdict, formal notation, and full
@@ -76,13 +77,21 @@ The full multi-agent version (four agents, mixed verdicts, trace printout):
 cargo run -p urge-runtime --example agent_gate
 ```
 
-Until the crates are on crates.io, depend on the git repo:
+```console
+$ cargo add urge
+```
+
+`urge` is a facade over `urge-runtime` and is the one to depend on unless you
+need a narrower slice. On an embedded target turn the defaults off — that gives
+you `no_std` with `alloc`, which is the floor:
 
 ```toml
 [dependencies]
-urge-meta = { git = "https://github.com/toneron2/URGE" }
-urge-core = { git = "https://github.com/toneron2/URGE" }
+urge = { version = "0.1", default-features = false }
 ```
+
+API documentation is on [docs.rs](https://docs.rs/urge). For the allocation-free
+tier, depend on [`urge-core`](https://crates.io/crates/urge-core) directly.
 
 For obligations that live *across* requests (deadlines, escalation,
 violation events), see `urge-monitor` and the obligation lifecycle below.
@@ -323,8 +332,10 @@ Details, code snippets, and honest status notes for both:
 
 ## Status & Roadmap
 
-v0.1.0 — the `std`/`alloc` tiers are complete: 35 tests passing, clippy- and
-rustfmt-clean, CI on every push. The heap-free embedded tier and a dedicated
+v0.1.2 — published on [crates.io](https://crates.io/crates/urge). The
+`std`/`alloc` tiers are complete: 43 tests passing, clippy- and rustfmt-clean,
+CI on every push. 0.1.2 fixed three `no_std` breaks that only appear outside the
+workspace, where feature unification hides them. The heap-free embedded tier and a dedicated
 probabilistic engine are the two big open items. Full status table and
 priorities: [`ROADMAP.md`](ROADMAP.md).
 
