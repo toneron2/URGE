@@ -6,15 +6,15 @@
 [![crates.io](https://img.shields.io/crates/v/urge.svg)](https://crates.io/crates/urge)
 [![docs.rs](https://img.shields.io/docsrs/urge)](https://docs.rs/urge)
 
-**[▶ Live demo](https://toneron2.github.io/URGE/demo/)** — type a governance
-expression, flip context slots, watch the verdict, formal notation, and full
-reasoning trace update. Pure client-side WebAssembly.
+**[Live demo](https://toneron2.github.io/URGE/demo/)**: enter a governance
+expression, set the context slots, and read the verdict, the formal notation and
+the reasoning trace. Client-side WebAssembly, nothing sent anywhere.
 
-**LLM agents can act — but they can't prove why an action was allowed.**
-URGE is a deterministic governance gate: wrap any agent action in a formal
-policy check and get back an auditable verdict with a full reasoning trace.
+**An LLM agent can act. It cannot show why the action was permitted.**
+URGE is a deterministic governance gate: a formal policy check around an agent
+action that returns an auditable verdict with its reasoning trace.
 
-Before your agent executes an action, it asks URGE. URGE parses a governance
+Before an agent executes an action, it asks URGE. URGE parses a governance
 expression (`must authorized and always audit_running`), routes it through up
 to seven formal logic engines — deontic, temporal/LTL, epistemic, modal, fuzzy,
 paraconsistent, boolean — cross-checks the engines' results against each other,
@@ -355,8 +355,8 @@ Contributions welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Apache-2.0 — © 2025 TODOMODO.IO AGENCY LLC / Anthony R. Slosar
 
-Apache 2.0 includes an explicit patent grant: you can use, modify, and ship
-URGE commercially without asking.
+Apache 2.0 includes an explicit patent grant; commercial use, modification and
+redistribution are permitted.
 
 ---
 
