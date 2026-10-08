@@ -5,7 +5,7 @@
 //! ```
 //!
 //! Reads one JSON object from standard input: `expr` (the expression), `facts` (a flat object
-//! of booleans and numbers; a fact not supplied reads as false) and optionally `config`
+//! of booleans; a fact not supplied reads as false, and so does a number for now) and optionally `config`
 //! (`"healthcare"`, the default and the browser demo's: every paradigm certifies and the
 //! confidence threshold is 0.80; `"standard"`: 0.50; `"embedded"`: 0.20). Writes the verdict
 //! as one line of JSON; on a deny, `because` names the clauses that decided it.

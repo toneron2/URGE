@@ -91,7 +91,10 @@ With URGE cross-validation:
 - Cross-validator: temporal says false, deontic says violated → CONFLICT
 - Final verdict: DENIED with conflict_detail = "temporal deadline exceeded: obligation violated"
 
-This is what `CrossValidator::validate()` implements.
+This is what `CrossValidator::validate()` implements. One caveat: the deadline on the
+deontic side needs an `Expr::DeonticStatement`, which the parser does not build yet
+([#6](https://github.com/toneron2/URGE/issues/6)), so from an expression string the same
+conflict arises as `must authorized and always audit_running` with the audit trail down.
 
 ---
 
@@ -126,22 +129,24 @@ confidence = agreed_engines / total_engines
            = u8 in [0, 255] mapped to [0.0, 1.0]
 ```
 
-Example: 3 engines evaluate an expression.
-- DeonticEngine: valid = true
-- TemporalEngine: valid = true
-- BooleanEngine: valid = false (bare boolean check failed)
+That is the formula. In practice the ratio is always 1 of 1 today: every node the parser
+produces is handled by exactly one engine, so an engine-produced verdict has confidence 255
+and a verdict no engine could produce has 0. The engines' own confidences (temporal HIGH,
+the fuzzy degree, epistemic MEDIUM on a deny) are not yet carried into the aggregate. The
+intended example, three engines on one node with a 2/3 split giving 170/255, cannot occur
+until that changes ([#3](https://github.com/toneron2/URGE/issues/3)).
 
-Agreement: 2/3 = 0.67 → Confidence = 170/255 ≈ 0.67
-
-In healthcare config (`exhaustive_evaluation = true`), **all 7 paradigms**
-are always evaluated. This means a verdict requires multi-paradigm agreement,
-which is the correct posture for clinical decision support.
+In healthcare config (`exhaustive_evaluation = true`) every engine is offered every node;
+each node is still taken by the one engine that handles it. What the config buys today is
+that no paradigm is skipped by the token-based detector.
 
 ---
 
 ## Memory Model
 
 ### Embedded (no_std, no alloc)
+
+Design targets. This tier does not compile yet; see `ROADMAP.md`.
 
 ```
 Unicode dict table:    8 KB Flash (static slice)
