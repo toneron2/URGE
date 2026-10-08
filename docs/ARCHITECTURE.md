@@ -125,20 +125,31 @@ a new obligation can be created.
 ## Confidence Calculation
 
 ```
-confidence = agreed_engines / total_engines
+confidence = min( agreed_engines / total_engines,
+                  weakest engine confidence among the verdicts )
            = u8 in [0, 255] mapped to [0.0, 1.0]
 ```
 
-That is the formula. In practice the ratio is always 1 of 1 today: every node the parser
-produces is handled by exactly one engine, so an engine-produced verdict has confidence 255
-and a verdict no engine could produce has 0. The engines' own confidences (temporal HIGH,
-the fuzzy degree, epistemic MEDIUM on a deny) are not yet carried into the aggregate. The
-intended example, three engines on one node with a 2/3 split giving 170/255, cannot occur
-until that changes ([#3](https://github.com/toneron2/URGE/issues/3)).
+Every node the parser produces is handled by exactly one engine, so the agreement term is
+1 of 1 and the engine term is what varies:
+
+| Engine | Confidence of its verdict |
+|---|---|
+| Boolean, Deontic | 255 (certain) |
+| Temporal, Modal | 204 (HIGH: the future and other worlds are open) |
+| Epistemic | 204 on a permit, 153 (MEDIUM) on a deny |
+| Fuzzy | the membership degree, 0.5 → 127 |
+| Paraconsistent | 255 when consistent, 102 (LOW) for BOTH or NEITHER |
+| none succeeded | 0 |
+
+A connective decided from its sides takes the weaker side. The pipeline then denies any
+verdict under `PipelineConfig::confidence_threshold`, so under the healthcare tier (204) a
+temporal clause passes exactly at the line and a fuzzy clause at 0.5 does not. If two engines
+ever handle the same node, the agreement term engages as designed: a 2/3 split gives 170/255.
 
 In healthcare config (`exhaustive_evaluation = true`) every engine is offered every node;
-each node is still taken by the one engine that handles it. What the config buys today is
-that no paradigm is skipped by the token-based detector.
+each node is still taken by the one engine that handles it. What the config buys is that no
+paradigm is skipped by the token-based detector.
 
 ---
 

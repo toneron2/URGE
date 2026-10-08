@@ -376,6 +376,76 @@ mod tests {
 
     #[test]
     #[cfg(feature = "alloc")]
+    fn confidence_is_the_weakest_engine() {
+        use urge_core::decision::Confidence;
+        let pipeline = GovernancePipeline::new(PipelineConfig::healthcare());
+        let slots = &[
+            ("a", ContextValue::Bool(true)),
+            ("b", ContextValue::Bool(false)),
+            ("n", ContextValue::Bool(true)),
+        ];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        let conf = |e: &str| pipeline.evaluate_str(e, &ctx).confidence;
+        assert_eq!(conf("a"), Confidence::CERTAIN);
+        assert_eq!(conf("must a"), Confidence::CERTAIN);
+        assert_eq!(conf("always a"), Confidence::HIGH);
+        assert_eq!(conf("necessarily a"), Confidence::HIGH);
+        assert_eq!(conf("knows n a"), Confidence::HIGH);
+        assert_eq!(conf("knows n b"), Confidence::MEDIUM, "an epistemic deny");
+        // A connective takes its weaker side.
+        assert_eq!(conf("must a and always a"), Confidence::HIGH);
+        assert_eq!(conf("always a or must a"), Confidence::HIGH);
+        // Nothing an engine could decide: no confidence.
+        assert_eq!(conf("a release b"), Confidence::NONE);
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn the_threshold_now_engages() {
+        let slots = &[("a", ContextValue::Bool(true))];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        // HIGH (204) meets the healthcare threshold (204) exactly; one above it does not.
+        let healthcare = GovernancePipeline::new(PipelineConfig::healthcare());
+        assert!(healthcare.evaluate_str("always a", &ctx).valid);
+        let stricter = GovernancePipeline::new(PipelineConfig {
+            confidence_threshold: 205,
+            ..PipelineConfig::healthcare()
+        });
+        let v = stricter.evaluate_str("always a", &ctx);
+        assert!(!v.valid, "{v:?}");
+        assert!(
+            v.cross_validation.consistent,
+            "denied on confidence, not on a conflict"
+        );
+        assert!(
+            stricter.evaluate_str("must a", &ctx).valid,
+            "a certain verdict still permits"
+        );
+        // A fuzzy verdict at degree 0.5 is confidence 127: below every tier but embedded.
+        let fuzzy = "a fuzzy_and a";
+        assert!(!healthcare.evaluate_str(fuzzy, &ctx).valid);
+        assert!(
+            !GovernancePipeline::new(PipelineConfig::default())
+                .evaluate_str(fuzzy, &ctx)
+                .valid
+        );
+        assert!(
+            GovernancePipeline::new(PipelineConfig::embedded())
+                .evaluate_str(fuzzy, &ctx)
+                .valid
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
     fn healthcare_config_exhaustive() {
         let pipeline = GovernancePipeline::default_healthcare();
         assert!(pipeline.config.exhaustive_evaluation);

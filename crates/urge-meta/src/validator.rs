@@ -154,7 +154,20 @@ impl CrossValidator {
             .count() as u8;
         let total = successful.len() as u8;
 
-        let confidence = Confidence::from_agreement(agreement_count, total);
+        // The aggregate is the weaker of two things: how many engines agree, and the least
+        // confident engine among them. A node is handled by one engine today, so the second
+        // term is what carries information: temporal and modal verdicts are HIGH, an
+        // epistemic deny is MEDIUM, a fuzzy verdict is its membership degree. Until 0.1.4 the
+        // engines' own confidences were discarded and every verdict came back at 255.
+        let weakest_engine = successful
+            .iter()
+            .map(|v| v.confidence)
+            .min()
+            .unwrap_or(Confidence::NONE);
+        let confidence = core::cmp::min(
+            Confidence::from_agreement(agreement_count, total),
+            weakest_engine,
+        );
 
         trace.push(TraceEntry {
             stage: Stage::CrossValidation,
