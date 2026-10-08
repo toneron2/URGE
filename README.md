@@ -128,6 +128,8 @@ and `docs/demo/pkg/SHA256SUMS` pins its two files for each release.
 | `always φ within N` · `eventually φ within N` (also `before N`, `deadline N`) | G≤N(φ), required until logical time N · F≤N(φ), required by it |
 | `knows agent φ` · `believes agent φ` · `common_knowledge φ` | K(agent, φ) · B(agent, φ) · C(φ) |
 | `φ and ψ`, `or`, `implies`, `iff`, `xor` | ∧ ∨ → ↔ ⊕, lowest precedence `iff` |
+| `mu φ` · `φ fuzzy_and ψ` · `φ fuzzy_or ψ` | μ(φ) · min · max over degrees: a numeric fact clamped to 0–1, a boolean as 1 or 0, an absent fact 0; holds at ≥ 0.5 |
+| `both φ` · `neither φ` | Belnap Both · Neither: φ is contradictory evidence, or a gap. Both is reported as a conflict and denies; Neither reads false |
 
 A prefix operator applies to the next operand only: `must a or b` is `O(a) ∨ b`. Parentheses
 are not part of the grammar. An expression that does not parse completely is denied, and
@@ -147,7 +149,7 @@ INPUT (governance expression or event)
   ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │ STAGE 1: TOKENIZATION                                            │
-│   Unicode Semantic Dictionary (61 operator entries, 8 paradigms) │
+│   Unicode Semantic Dictionary (63 operator entries, 8 paradigms) │
 │   Every symbol classified before any evaluation                  │
 │   [ Shell-proof heritage: grep -oP | awk | classify pipeline ]   │
 ├──────────────────────────────────────────────────────────────────┤
@@ -212,8 +214,8 @@ engines' own confidences are not yet carried through, so the three threshold tie
 | Epistemic       | K B C  knows  believes                 | Agent knowledge verification         |
 | **Deontic**     | **O P F  must  may  must_not**         | **Obligations, permissions**         |
 | **Temporal/LTL**| **G F X U  always  eventually  until** | **Deadline enforcement**             |
-| Fuzzy           | μ ⊓ ⊔  likely  probability             | Thresholds, uncertainty              |
-| Paraconsistent  | Belnap 4-valued: T F Both Neither      | Contradiction without explosion      |
+| Fuzzy           | μ ⊓ ⊔  mu  fuzzy_and  fuzzy_or         | Thresholds, uncertainty              |
+| Paraconsistent  | both  neither  (Belnap 4-valued)       | Contradiction without explosion      |
 | Probabilistic¹  | P(·)  prior  likelihood                | Bayesian confidence (planned)        |
 
 ¹ Probabilistic operators are classified by the Unicode Semantic Dictionary,
@@ -226,11 +228,11 @@ implemented and tested.
 
 | Capability                        | OPA / Rego | Drools  | URGE  |
 |-----------------------------------|-----------|---------|-------|
-| Multi-paradigm (7 engines)⁴       | ✗         | ✗       | **✓** |
+| Multi-paradigm (7 engines)        | ✗         | ✗       | **✓** |
 | Cross-paradigm validation²        | ✗         | ✗       | **✓** |
 | Deontic obligation lifecycle      | ✗         | partial | **✓** |
 | Temporal LTL monitoring⁵          | ✗         | partial | partial |
-| Paraconsistent contradiction mgmt⁴ | ✗        | ✗       | partial |
+| Paraconsistent contradiction mgmt | ✗         | ✗       | **✓** |
 | Embedded / no_std capable         | ✗         | ✗       | WIP³  |
 | Full logic trace + audit          | partial   | partial | **✓** |
 | Formal Unicode notation output    | ✗         | ✗       | **✓** |
@@ -242,10 +244,6 @@ the same policy in Rego and in URGE, showing what each system reports.
 
 ³ Embedded `no_std` support is architected but **not yet functional** — the
 heap-free AST representation is still WIP. The `std`/`alloc` tiers are complete.
-
-⁴ Seven engines ship, five are reachable from an expression string. The paraconsistent
-operators have no keyword yet, and the fuzzy engine does not read facts, so both can only be
-exercised from a hand-built AST ([#5](https://github.com/toneron2/URGE/issues/5)).
 
 ⁵ The instantaneous checks (G, F, X, U against the current context) ship. The continuous
 monitors in `urge-monitor::temporal` exist but `GovernanceMonitor` does not yet drive them
@@ -336,7 +334,7 @@ need inference to decide that "must" is deontic.
 urge/                          Cargo workspace
 ├── crates/
 │   ├── urge-core/             no_std kernel
-│   │   ├── symbol.rs          Unicode Semantic Dictionary (61 operator entries)
+│   │   ├── symbol.rs          Unicode Semantic Dictionary (63 operator entries)
 │   │   ├── ast.rs             Multi-paradigm AST (heap or heapless)
 │   │   ├── engine.rs          LogicEngine trait + Paradigm enum
 │   │   └── decision.rs        Verdict, LogicTrace, Confidence, CrossValidation

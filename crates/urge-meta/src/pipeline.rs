@@ -323,6 +323,65 @@ mod tests {
 
     #[test]
     #[cfg(feature = "alloc")]
+    fn fuzzy_reads_facts_as_degrees() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::default());
+        let slots = &[
+            ("risk", ContextValue::Float(0.3)),
+            ("fit", ContextValue::Float(0.9)),
+            ("ok", ContextValue::Bool(true)),
+            ("pct", ContextValue::Integer(80)),
+        ];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        let eval = |e: &str| pipeline.evaluate_str(e, &ctx);
+        let v = eval("mu risk");
+        assert!(!v.valid, "{v:?}");
+        assert_eq!(v.formal_notation, "μ(risk) = 0.300");
+        assert!(v.paradigms_evaluated.contains(Paradigm::Fuzzy));
+        assert!(eval("mu fit").valid);
+        let v = eval("mu not risk");
+        assert!(v.valid, "1 - 0.3: {v:?}");
+        assert_eq!(v.formal_notation, "μ(¬(risk)) = 0.700");
+        assert_eq!(
+            eval("risk fuzzy_and fit").formal_notation,
+            "(risk) ⊓ (fit) = 0.300"
+        );
+        assert!(!eval("risk fuzzy_and fit").valid, "min");
+        assert!(eval("risk fuzzy_or fit").valid, "max");
+        assert!(eval("ok fuzzy_and fit").valid, "a boolean is 1");
+        assert!(eval("pct fuzzy_and fit").valid, "an integer clamps to 1");
+        assert!(!eval("absent fuzzy_or risk").valid, "an absent fact is 0");
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn belnap_markers_reach_the_paraconsistent_engine() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::default());
+        let slots = &[("sensor_ok", ContextValue::Bool(true))];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        let v = pipeline.evaluate_str("both sensor_ok", &ctx);
+        assert!(v.paradigms_evaluated.contains(Paradigm::Paraconsistent));
+        assert_eq!(v.formal_notation, "Belnap::Both");
+        assert!(!v.valid, "a contradiction is reported, not resolved: {v:?}");
+        assert!(!v.cross_validation.consistent);
+        assert_eq!(
+            v.cross_validation.conflict_detail,
+            Some("paraconsistent scenario: see engine trace")
+        );
+        let v = pipeline.evaluate_str("neither sensor_ok", &ctx);
+        assert_eq!(v.formal_notation, "Belnap::Neither");
+        assert!(!v.valid);
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
     fn evaluate_deontic_obligation() {
         let pipeline = GovernancePipeline::new(PipelineConfig::default());
         let slots = &[("consent:done", ContextValue::Bool(true))];
