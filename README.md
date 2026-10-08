@@ -81,6 +81,9 @@ cargo run -p urge-runtime --example agent_gate
 $ cargo add urge
 ```
 
+`cargo add urge` installs 0.1.2 from crates.io. For 0.1.3, depend on the tag:
+`urge = { git = "https://github.com/toneron2/URGE", tag = "v0.1.3" }`.
+
 `urge` is a facade over `urge-runtime` and is the one to depend on unless you
 need a narrower slice. On an embedded target turn the defaults off — that gives
 you `no_std` with `alloc`, which is the floor:
@@ -382,8 +385,8 @@ Details, code snippets, and honest status notes for both:
 
 ## Status & Roadmap
 
-v0.1.3 — the crates on [crates.io](https://crates.io/crates/urge) are the published
-releases. The `std`/`alloc` tiers are complete: 59 tests passing, clippy- and
+v0.1.3 — released on GitHub ([tag `v0.1.3`](https://github.com/toneron2/URGE/releases/tag/v0.1.3));
+[crates.io](https://crates.io/crates/urge) carries 0.1.2. The `std`/`alloc` tiers are complete: 59 tests passing, clippy- and
 rustfmt-clean, CI on every push. 0.1.3 corrects the parser and the cross-validator and adds
 the deny explanation and `urge-eval`; see [`CHANGELOG.md`](CHANGELOG.md). The heap-free embedded tier and a dedicated
 probabilistic engine are the two big open items. Full status table and
