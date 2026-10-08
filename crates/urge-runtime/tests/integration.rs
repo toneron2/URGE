@@ -358,3 +358,74 @@ fn test_mixed_expression_default_config() {
     let v = p.evaluate_str(GATE_EXPR, &gate_ctx(true, true));
     assert!(v.valid, "default config must also permit: {v:?}");
 }
+
+// ── Healthcare facade: citations and the audit trail ──────────────────────────
+
+#[test]
+fn phi_access_is_cited_and_audited() {
+    use urge_runtime::healthcare::{hipaa, HealthcareGovernor};
+    let mut gov = HealthcareGovernor::new();
+    assert!(gov
+        .check_phi_access("nurse_007", "P123", true, true, true)
+        .is_ok());
+    let denied = gov.check_phi_access("nurse_007", "P123", true, true, false);
+    assert_eq!(
+        denied,
+        Err("HIPAA §164.312(b): access denied, audit controls are not active")
+    );
+    assert!(gov
+        .check_phi_access("nurse_007", "P123", false, true, true)
+        .is_err());
+
+    let log = gov.audit_log().entries();
+    assert_eq!(log.len(), 3);
+    assert!(log[0].permitted);
+    assert!(!log[1].permitted && !log[2].permitted);
+    for e in log {
+        assert_eq!(e.agent.as_deref(), Some("nurse_007"));
+        assert_eq!(e.correlation_id.as_deref(), Some("P123"));
+        assert_eq!(e.citations, vec![hipaa::PHI_ACCESS.citation.to_string()]);
+        assert_eq!(e.expression, hipaa::PHI_ACCESS.expression);
+    }
+    #[cfg(feature = "serde")]
+    assert!(log[0]
+        .trace_json
+        .as_deref()
+        .is_some_and(|j| j.contains("CrossValidation")));
+}
+
+#[test]
+fn a_policy_verdict_carries_its_citation() {
+    use urge_runtime::healthcare::{clinical, hipaa, HealthcareGovernor};
+    let mut gov = HealthcareGovernor::new();
+    let v = gov.evaluate_policy(
+        &hipaa::AUDIT_CONTROLS,
+        &[("audit_active", ContextValue::Bool(true))],
+        None,
+        None,
+    );
+    assert!(v.valid);
+    assert_eq!(v.citations.len(), 1);
+    assert_eq!(v.citations[0].id, "HIPAA-§164.312(b)");
+    assert_eq!(
+        v.citations[0].description,
+        hipaa::AUDIT_CONTROLS.requirement
+    );
+    let v = gov.evaluate_policy(
+        &clinical::INFORMED_CONSENT,
+        &[
+            ("procedure", ContextValue::Bool(true)),
+            ("consent_obtained", ContextValue::Bool(false)),
+        ],
+        Some("dr_lee"),
+        Some("P9"),
+    );
+    assert!(!v.valid);
+    assert_eq!(v.citations[0].id, "clinical:informed-consent");
+    let last = gov.audit_log().entries().last().unwrap();
+    assert_eq!(last.agent.as_deref(), Some("dr_lee"));
+    assert_eq!(
+        last.citations,
+        vec!["clinical:informed-consent".to_string()]
+    );
+}
