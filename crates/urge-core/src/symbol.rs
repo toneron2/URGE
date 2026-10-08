@@ -555,10 +555,17 @@ impl UnicodeSemanticDictionary {
     ];
 
     /// Look up a symbol by its Unicode codepoint.
+    ///
+    /// ASCII letters and digits never resolve. The letters some entries carry as their
+    /// codepoint (K for Knows, O for Obligatory, G for Globally, ...) name the operator in
+    /// formal notation; they are not input syntax. Until 0.1.4 they did resolve, so an
+    /// identifier starting with one of them (`Patient_consent`, `Flag`) tokenized as that
+    /// operator followed by the rest of the word.
     pub fn lookup_codepoint(cp: u32) -> Option<&'static Symbol> {
-        Self::ENTRIES
-            .iter()
-            .find(|s| s.codepoint == cp && s.codepoint != 0)
+        if cp == 0 || (cp < 0x80 && (cp as u8).is_ascii_alphanumeric()) {
+            return None;
+        }
+        Self::ENTRIES.iter().find(|s| s.codepoint == cp)
     }
 
     /// Look up a symbol by its keyword alias (case-insensitive ASCII).
@@ -613,5 +620,31 @@ impl ParadigmSet {
 
     pub fn iter(&self) -> impl Iterator<Item = Paradigm> + '_ {
         Paradigm::ALL.iter().copied().filter(|&p| self.contains(p))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ascii_letters_are_not_operators() {
+        for letter in [
+            'K', 'B', 'C', 'D', 'O', 'P', 'F', 'G', 'X', 'U', 'R', 'a', '7',
+        ] {
+            assert!(
+                UnicodeSemanticDictionary::lookup_codepoint(letter as u32).is_none(),
+                "{letter}"
+            );
+        }
+        assert!(UnicodeSemanticDictionary::lookup_codepoint(0).is_none());
+    }
+
+    #[test]
+    fn symbols_and_ascii_punctuation_still_resolve() {
+        let class = |cp: u32| UnicodeSemanticDictionary::lookup_codepoint(cp).map(|s| s.class);
+        assert_eq!(class(0x2227), Some(SemanticClass::Conjunction));
+        assert_eq!(class('=' as u32), Some(SemanticClass::Equals));
+        assert_eq!(class('<' as u32), Some(SemanticClass::LessThan));
     }
 }

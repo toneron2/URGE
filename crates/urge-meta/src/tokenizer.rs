@@ -166,34 +166,6 @@ impl Tokenizer {
     }
 }
 
-// ── Regex-based tokenizer (std + regex feature) ───────────────────────────────
-//
-// When compiled with the `regex` feature, the tokenizer uses a compiled regex
-// to match multi-character keywords in a single pass. This matches the spirit
-// of the shell proof (grep -oP) but is compiled at build time.
-//
-// The regex pattern is built from all keyword entries in the dictionary.
-
-#[cfg(feature = "regex")]
-mod regex_tokenizer {
-    use super::*;
-
-    /// Build the keyword pattern from the dictionary at runtime.
-    /// In production you'd use a `lazy_static!` or `once_cell::sync::Lazy`.
-    /// Provided as a helper for downstream consumers; not used internally.
-    #[allow(dead_code)]
-    pub fn build_keyword_pattern() -> alloc::string::String {
-        let mut keywords: Vec<&'static str> = UnicodeSemanticDictionary::ENTRIES
-            .iter()
-            .filter_map(|s| s.keyword)
-            .collect();
-        // Sort longest first to avoid prefix shadowing.
-        keywords.sort_by_key(|k| core::cmp::Reverse(k.len()));
-        keywords.dedup();
-        alloc::format!(r"\b({})\b", keywords.join("|"))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -217,6 +189,26 @@ mod tests {
         assert!(tokens.iter().any(|t| t.class == SemanticClass::Globally));
         assert!(tokens.iter().any(|t| t.class == SemanticClass::Finally));
         assert!(tokens.iter().any(|t| t.class == SemanticClass::Until));
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn an_identifier_may_start_with_an_operator_letter() {
+        let t = Tokenizer::new();
+        for word in [
+            "Patient_consent",
+            "Known",
+            "Flag",
+            "Guard",
+            "Obligation",
+            "Battery_ok",
+            "F",
+        ] {
+            let tokens = t.tokenize(word);
+            assert_eq!(tokens.len(), 1, "{word}: {tokens:?}");
+            assert_eq!(tokens[0].class, SemanticClass::Identifier, "{word}");
+            assert_eq!(tokens[0].raw.as_str(), word);
+        }
     }
 
     #[test]

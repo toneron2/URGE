@@ -43,6 +43,16 @@ fn side_notation(results: &[Result<Verdict, EngineError>]) -> alloc::string::Str
     }
 }
 
+/// What routing one node produced: its verdicts and, for a conjunction decided from its
+/// fragments, the leaf engine verdicts under it. An enclosing `and` cross-validates those
+/// leaves rather than one verdict per side, so `must a and always b and must c` is checked
+/// over the same three leaves whichever way its conjuncts are ordered.
+#[cfg(feature = "alloc")]
+struct Routed {
+    results: Vec<Result<Verdict, EngineError>>,
+    conjuncts: Option<Vec<Verdict>>,
+}
+
 /// The engine router.
 pub struct EngineRouter;
 
@@ -61,7 +71,7 @@ impl EngineRouter {
         ctx: &EvalContext<'_>,
         trace: &mut LogicTrace,
     ) -> Vec<Result<Verdict, EngineError>> {
-        Self::route_inner(node, active_paradigms, ctx, trace, 0)
+        Self::route_inner(node, active_paradigms, ctx, trace, 0).results
     }
 
     #[cfg(feature = "alloc")]
@@ -71,7 +81,7 @@ impl EngineRouter {
         ctx: &EvalContext<'_>,
         trace: &mut LogicTrace,
         depth: u8,
-    ) -> Vec<Result<Verdict, EngineError>> {
+    ) -> Routed {
         let engines = all_engines();
         let mut results = Vec::new();
 
@@ -133,14 +143,12 @@ impl EngineRouter {
                         outcome: EntryOutcome::Routed,
                     });
 
-                    let left_results =
-                        Self::route_inner(left, active_paradigms, ctx, trace, depth + 1);
+                    let left = Self::route_inner(left, active_paradigms, ctx, trace, depth + 1);
                     let (left_valid, left_conf, _) =
-                        crate::validator::CrossValidator::validate(&left_results, trace);
-                    let right_results =
-                        Self::route_inner(right, active_paradigms, ctx, trace, depth + 1);
+                        crate::validator::CrossValidator::validate(&left.results, trace);
+                    let right = Self::route_inner(right, active_paradigms, ctx, trace, depth + 1);
                     let (right_valid, right_conf, _) =
-                        crate::validator::CrossValidator::validate(&right_results, trace);
+                        crate::validator::CrossValidator::validate(&right.results, trace);
 
                     let combined = match op {
                         SemanticClass::Conjunction => left_valid && right_valid,
@@ -150,7 +158,7 @@ impl EngineRouter {
                         SemanticClass::ExclusiveOr => left_valid ^ right_valid,
                         _ => unreachable!(),
                     };
-                    let (l, r) = (side_notation(&left_results), side_notation(&right_results));
+                    let (l, r) = (side_notation(&left.results), side_notation(&right.results));
                     let notation = match op {
                         SemanticClass::Conjunction => alloc::format!("{l} ∧ {r}"),
                         SemanticClass::Disjunction => alloc::format!("({l}) ∨ ({r})"),
@@ -159,9 +167,17 @@ impl EngineRouter {
                         _ => alloc::format!("({l}) ⊕ ({r})"),
                     };
 
-                    let mut parts = left_results;
-                    parts.extend(right_results);
-                    let cross = if matches!(op, SemanticClass::Conjunction) {
+                    // The parts an `and` cross-validates: a side that is itself a conjunction
+                    // contributes its leaves, any other side its own verdicts.
+                    let mut parts: Vec<Result<Verdict, EngineError>> = Vec::new();
+                    for side in [left, right] {
+                        match side.conjuncts {
+                            Some(leaves) => parts.extend(leaves.into_iter().map(Ok)),
+                            None => parts.extend(side.results),
+                        }
+                    }
+                    let is_and = matches!(op, SemanticClass::Conjunction);
+                    let cross = if is_and {
                         crate::validator::CrossValidator::validate(&parts, trace).2
                     } else {
                         CrossValidation::ok()
@@ -196,7 +212,11 @@ impl EngineRouter {
                         formal_notation: notation,
                         citations,
                     }));
-                    return results;
+                    return Routed {
+                        results,
+                        conjuncts: is_and
+                            .then(|| parts.into_iter().filter_map(Result::ok).collect()),
+                    };
                 }
             }
         }
@@ -212,7 +232,10 @@ impl EngineRouter {
             results.push(urge_engines::boolean::BooleanEngine.evaluate(node, ctx));
         }
 
-        results
+        Routed {
+            results,
+            conjuncts: None,
+        }
     }
 
     /// Embedded path: route to a single best-fit engine without allocation.
