@@ -34,15 +34,11 @@ use alloc::vec::Vec;
 
 /// Tokenizes an input string into a classified token stream.
 #[derive(Default)]
-pub struct Tokenizer {
-    /// Whether to normalize Unicode (NFC) before tokenizing.
-    /// Disable on embedded targets where ICU is not available.
-    pub normalize_unicode: bool,
-}
+pub struct Tokenizer;
 
 impl Tokenizer {
     pub fn new() -> Self {
-        Self::default()
+        Tokenizer
     }
 
     /// Tokenize a UTF-8 input string.

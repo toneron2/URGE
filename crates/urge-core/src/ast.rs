@@ -85,23 +85,6 @@ pub enum Expr {
         paradigms: ParadigmSet,
     },
 
-    // ── Ternary (e.g., temporal Until: φ U ψ) ─────────────────────────────
-    Ternary {
-        op: SemanticClass,
-        first: AstNode,
-        second: AstNode,
-        third: AstNode,
-        paradigms: ParadigmSet,
-    },
-
-    // ── Quantified formula ─────────────────────────────────────────────────
-    Quantified {
-        quantifier: SemanticClass,
-        variable: heapless::String<32>,
-        body: AstNode,
-        paradigms: ParadigmSet,
-    },
-
     // ── Application (agent · predicate in epistemic logic) ────────────────
     Apply {
         op: SemanticClass,
@@ -111,6 +94,14 @@ pub enum Expr {
     },
 
     // ── Obligation / Permission / Prohibition with metadata ────────────────
+    /// A deontic statement about a named agent and action, with an optional deadline
+    /// and policy source.
+    ///
+    /// **Programmatic only.** The parser does not build this node; construct it with
+    /// [`node`] and evaluate it through `GovernancePipeline::evaluate_ast`. The deontic
+    /// engine reads these context slots for it: `deontic:{agent}:{action}` (a boolean
+    /// override of a permission), `{agent}:{action}:done` (the obligation was performed)
+    /// and `{agent}:{action}:attempting` (a prohibited action is being attempted).
     DeonticStatement {
         modality: SemanticClass, // Obligatory | Permitted | Forbidden
         agent: heapless::String<16>,
@@ -140,8 +131,6 @@ impl Expr {
             Expr::Var { paradigms, .. } => *paradigms,
             Expr::Unary { paradigms, .. } => *paradigms,
             Expr::Binary { paradigms, .. } => *paradigms,
-            Expr::Ternary { paradigms, .. } => *paradigms,
-            Expr::Quantified { paradigms, .. } => *paradigms,
             Expr::Apply { paradigms, .. } => *paradigms,
             Expr::DeonticStatement { paradigms, .. } => *paradigms,
             Expr::TemporalConstraint { paradigms, .. } => *paradigms,

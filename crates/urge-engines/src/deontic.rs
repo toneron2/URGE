@@ -74,11 +74,7 @@ impl LogicEngine for DeonticEngine {
                 let ctx_key: &str = "deontic:__lookup_unsupported__";
 
                 // Try to find a context override.
-                let ctx_override = ctx
-                    .slots
-                    .iter()
-                    .find(|(k, _)| *k == ctx_key)
-                    .map(|(_, v)| v);
+                let ctx_override = ctx.get(ctx_key);
 
                 let (valid, description, outcome) = match modality {
                     SemanticClass::Obligatory => {
@@ -88,10 +84,8 @@ impl LogicEngine for DeonticEngine {
                         let done_key = alloc::format!("{}:{}:done", agent, action);
                         #[cfg(feature = "alloc")]
                         let done = ctx
-                            .slots
-                            .iter()
-                            .find(|(k, _)| *k == done_key.as_str())
-                            .and_then(|(_, v)| v.as_bool())
+                            .get(&done_key)
+                            .and_then(|v| v.as_bool())
                             .unwrap_or(false);
                         #[cfg(not(feature = "alloc"))]
                         let done = false;
@@ -122,10 +116,8 @@ impl LogicEngine for DeonticEngine {
                         let attempting_key = alloc::format!("{}:{}:attempting", agent, action);
                         #[cfg(feature = "alloc")]
                         let attempting = ctx
-                            .slots
-                            .iter()
-                            .find(|(k, _)| *k == attempting_key.as_str())
-                            .and_then(|(_, v)| v.as_bool())
+                            .get(&attempting_key)
+                            .and_then(|v| v.as_bool())
                             .unwrap_or(false);
                         #[cfg(not(feature = "alloc"))]
                         let attempting = false;
