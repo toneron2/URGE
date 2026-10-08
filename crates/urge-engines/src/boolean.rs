@@ -6,7 +6,7 @@
 use urge_core::{
     ast::{AstNode, Expr, Literal},
     decision::{Confidence, CrossValidation, EntryOutcome, LogicTrace, Stage, TraceEntry, Verdict},
-    engine::{EngineError, EngineId, EvalContext, LogicEngine, Paradigm},
+    engine::{ContextValue, EngineError, EngineId, EvalContext, LogicEngine, Paradigm},
     symbol::{ParadigmSet, SemanticClass},
 };
 
@@ -37,7 +37,13 @@ impl LogicEngine for BooleanEngine {
                         | SemanticClass::Disjunction
                         | SemanticClass::Implication
                         | SemanticClass::Biconditional
-                        | SemanticClass::ExclusiveOr,
+                        | SemanticClass::ExclusiveOr
+                        | SemanticClass::Equals
+                        | SemanticClass::NotEquals
+                        | SemanticClass::LessThan
+                        | SemanticClass::LessOrEqual
+                        | SemanticClass::GreaterThan
+                        | SemanticClass::GreaterOrEqual,
                     ..
                 }
         )
@@ -90,13 +96,14 @@ fn eval_bool(
         }
 
         Expr::Lit(Literal::Integer(n)) => Ok(*n != 0),
+        Expr::Lit(Literal::Float(f)) => Ok(*f != 0.0),
 
         Expr::Var { name, .. } => {
             let key_str: &str = name.as_str();
             // Look up in context by iterating slots.
             for (k, v) in ctx.slots {
                 if *k == key_str {
-                    let b = v.as_bool().unwrap_or(false);
+                    let b = truth(v);
                     trace.push(TraceEntry {
                         stage: Stage::EngineEvaluation,
                         paradigm: Some(Paradigm::Boolean),
@@ -127,6 +134,50 @@ fn eval_bool(
         } => {
             let inner = eval_bool(operand, ctx, trace, depth + 1)?;
             Ok(!inner)
+        }
+
+        // A comparison of two numbers: facts, literals, or booleans as 1 and 0. A side the
+        // context does not supply, or supplies as a string, makes the comparison false
+        // (closed-world), and the trace says so.
+        Expr::Binary {
+            op, left, right, ..
+        } if relational_symbol(*op).is_some() => {
+            let (l, r) = (eval_num(left, ctx), eval_num(right, ctx));
+            let (result, description) = match (l, r) {
+                (Some(l), Some(r)) => {
+                    let holds = match op {
+                        SemanticClass::Equals => l == r,
+                        SemanticClass::NotEquals => l != r,
+                        SemanticClass::LessThan => l < r,
+                        SemanticClass::LessOrEqual => l <= r,
+                        SemanticClass::GreaterThan => l > r,
+                        _ => l >= r,
+                    };
+                    (
+                        holds,
+                        if holds {
+                            "comparison holds"
+                        } else {
+                            "comparison fails"
+                        },
+                    )
+                }
+                _ => (
+                    false,
+                    "comparison: a side is absent or not numeric (CWA: false)",
+                ),
+            };
+            trace.push(TraceEntry {
+                stage: Stage::EngineEvaluation,
+                paradigm: Some(Paradigm::Boolean),
+                description,
+                outcome: if result {
+                    EntryOutcome::Permitted
+                } else {
+                    EntryOutcome::Denied
+                },
+            });
+            Ok(result)
         }
 
         Expr::Binary {
@@ -169,11 +220,56 @@ fn eval_bool(
     }
 }
 
+/// A fact's truth in boolean position: a boolean is itself, a number is true when nonzero,
+/// a string is false. Until 0.1.4 a number read as false.
+fn truth(v: &ContextValue) -> bool {
+    match v {
+        ContextValue::Bool(b) => *b,
+        ContextValue::Integer(n) => *n != 0,
+        ContextValue::Float(f) => *f != 0.0,
+        _ => false,
+    }
+}
+
+/// A node's value in numeric position: a numeric literal, a boolean as 1 or 0, or a fact
+/// supplied as a number or boolean. `None` for anything else, including an absent fact.
+fn eval_num(node: &AstNode, ctx: &EvalContext<'_>) -> Option<f64> {
+    match node.as_ref() {
+        Expr::Lit(Literal::Bool(b)) => Some(if *b { 1.0 } else { 0.0 }),
+        Expr::Lit(lit) => lit.as_f64(),
+        Expr::Var { name, .. } => ctx
+            .slots
+            .iter()
+            .find(|(k, _)| *k == name.as_str())
+            .and_then(|(_, v)| match v {
+                ContextValue::Bool(b) => Some(if *b { 1.0 } else { 0.0 }),
+                ContextValue::Integer(n) => Some(*n as f64),
+                ContextValue::Float(f) => Some(*f),
+                _ => None,
+            }),
+        _ => None,
+    }
+}
+
+/// The notation symbol of a relational operator, `None` for any other class.
+fn relational_symbol(op: SemanticClass) -> Option<&'static str> {
+    Some(match op {
+        SemanticClass::Equals => "=",
+        SemanticClass::NotEquals => "≠",
+        SemanticClass::LessThan => "<",
+        SemanticClass::LessOrEqual => "≤",
+        SemanticClass::GreaterThan => ">",
+        SemanticClass::GreaterOrEqual => "≥",
+        _ => return None,
+    })
+}
+
 #[cfg(feature = "alloc")]
 fn format_notation(node: &AstNode) -> alloc::string::String {
     match node.as_ref() {
         Expr::Lit(Literal::Bool(b)) => (if *b { "⊤" } else { "⊥" }).into(),
         Expr::Lit(Literal::Integer(n)) => alloc::format!("{n}"),
+        Expr::Lit(Literal::Float(f)) => alloc::format!("{f}"),
         Expr::Var { name, .. } => name.as_str().into(),
         Expr::Unary {
             op: SemanticClass::Negation,
@@ -210,6 +306,16 @@ fn format_notation(node: &AstNode) -> alloc::string::String {
             right,
             ..
         } => alloc::format!("({}) ⊕ ({})", format_notation(left), format_notation(right)),
+        Expr::Binary {
+            op, left, right, ..
+        } => match relational_symbol(*op) {
+            Some(sym) => alloc::format!(
+                "({}) {sym} ({})",
+                format_notation(left),
+                format_notation(right)
+            ),
+            None => alloc::string::String::from("…"),
+        },
         _ => alloc::string::String::from("…"),
     }
 }

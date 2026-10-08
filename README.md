@@ -127,11 +127,15 @@ and `docs/demo/pkg/SHA256SUMS` pins its two files for each release.
 | `always φ` · `eventually φ` · `never φ` | G(φ) · F(φ) · G(¬φ) |
 | `always φ within N` · `eventually φ within N` (also `before N`, `deadline N`) | G≤N(φ), required until logical time N · F≤N(φ), required by it |
 | `knows agent φ` · `believes agent φ` · `common_knowledge φ` | K(agent, φ) · B(agent, φ) · C(φ) |
+| `φ until ψ` (also `before`) · `φ release ψ` | φ U ψ, at this instant ψ ∨ φ · φ R ψ, at this instant ψ |
+| `x eq N` · `neq` · `lt` · `lte` · `gt` · `gte` (also `= ≠ < ≤ > ≥`) | a comparison of numbers: facts, literals (`20`, `37.5`), booleans as 1 and 0; an absent or non-numeric side makes it false |
 | `φ and ψ`, `or`, `implies`, `iff`, `xor` | ∧ ∨ → ↔ ⊕, lowest precedence `iff` |
 
-A prefix operator applies to the next operand only: `must a or b` is `O(a) ∨ b`. Parentheses
-are not part of the grammar. An expression that does not parse completely is denied, and
-the notation names the first token that could not be placed.
+A prefix operator applies to the next operand only: `must a or b` is `O(a) ∨ b`, and
+`must battery_pct gt 20` is `O(battery_pct) > 20`, so write `battery_pct gt 20` on its own
+or under `and`. A number in boolean position is true when nonzero. Parentheses are not part
+of the grammar. An expression that does not parse completely is denied, and the notation
+names the first token that could not be placed.
 
 ---
 
