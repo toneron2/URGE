@@ -339,43 +339,6 @@ mod tests {
 
     #[test]
     #[cfg(feature = "alloc")]
-    fn bounds_follow_logical_time() {
-        let pipeline = GovernancePipeline::new(PipelineConfig::default());
-        let slots = &[
-            ("reply", ContextValue::Bool(false)),
-            ("guard", ContextValue::Bool(false)),
-        ];
-        let at = |t: u64| EvalContext {
-            slots,
-            logical_time: t,
-            depth_limit: 16,
-        };
-        // eventually φ within 30: open until 30, failed after it without φ
-        assert!(
-            pipeline
-                .evaluate_str("eventually reply within 30", &at(10))
-                .valid
-        );
-        assert!(
-            !pipeline
-                .evaluate_str("eventually reply within 30", &at(50))
-                .valid
-        );
-        // always φ within 30: required until 30, no longer after it
-        assert!(
-            !pipeline
-                .evaluate_str("always guard within 30", &at(10))
-                .valid
-        );
-        assert!(
-            pipeline
-                .evaluate_str("always guard within 30", &at(50))
-                .valid
-        );
-    }
-
-    #[test]
-    #[cfg(feature = "alloc")]
     fn confidence_is_the_weakest_engine() {
         use urge_core::decision::Confidence;
         let pipeline = GovernancePipeline::new(PipelineConfig::healthcare());
@@ -440,6 +403,43 @@ mod tests {
         assert!(
             GovernancePipeline::new(PipelineConfig::embedded())
                 .evaluate_str(fuzzy, &ctx)
+                .valid
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn bounds_follow_logical_time() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::default());
+        let slots = &[
+            ("reply", ContextValue::Bool(false)),
+            ("guard", ContextValue::Bool(false)),
+        ];
+        let at = |t: u64| EvalContext {
+            slots,
+            logical_time: t,
+            depth_limit: 16,
+        };
+        // eventually φ within 30: open until 30, failed after it without φ
+        assert!(
+            pipeline
+                .evaluate_str("eventually reply within 30", &at(10))
+                .valid
+        );
+        assert!(
+            !pipeline
+                .evaluate_str("eventually reply within 30", &at(50))
+                .valid
+        );
+        // always φ within 30: required until 30, no longer after it
+        assert!(
+            !pipeline
+                .evaluate_str("always guard within 30", &at(10))
+                .valid
+        );
+        assert!(
+            pipeline
+                .evaluate_str("always guard within 30", &at(50))
                 .valid
         );
     }
