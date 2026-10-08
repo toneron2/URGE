@@ -13,7 +13,8 @@
 //! binary_op ::= AND | OR | IMPLIES | IFF | XOR | UNTIL | RELEASE
 //!             | EQ | NEQ | LT | LTE | GT | GTE
 //! prefix    ::= IDENTIFIER | LITERAL
-//!             | (GLOBALLY | FINALLY | NEXT) expr bound?
+//!             | (GLOBALLY | FINALLY) expr bound?    -- G≤N, F≤N
+//!             | NEXT expr
 //!             | NEVER expr bound?                    -- G(¬expr)
 //!             | (KNOWS | BELIEVES) IDENTIFIER expr   -- K(agent, expr), B(agent, expr)
 //!             | COMMON_KNOWLEDGE expr
@@ -207,7 +208,13 @@ impl Parser {
                         paradigms: neg,
                     });
                 }
-                let bound_ns = self.bound();
+                // A bound belongs to `always`, `never` and `eventually`; after `next` it is
+                // left unparsed, which is an error rather than a bound silently ignored.
+                let bound_ns = if op == SemanticClass::Next {
+                    None
+                } else {
+                    self.bound()
+                };
                 let mut ps = ParadigmSet::empty();
                 ps.insert(urge_core::engine::Paradigm::Temporal);
                 node(Expr::TemporalConstraint {

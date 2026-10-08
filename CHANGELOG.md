@@ -14,8 +14,9 @@ Corrections:
 - `knows`, `believes` and `common_knowledge` parsed as the literal false. They now parse as
   `knows agent φ`, `believes agent φ` and `common_knowledge φ`.
 - `must_not φ` printed as F(φ), the letter `eventually` prints. It now prints as O(¬φ).
-- `within`, `before` and `deadline` after a temporal operand were dropped. `always φ within N`
-  now sets the bound.
+- `within`, `before` and `deadline` after a temporal operand were dropped. `eventually φ within N`
+  now requires φ by logical time N and `always φ within N` requires it until then; the
+  notation prints the bound (F≤N, G≤N). A bound after `next` is a parse error.
 - Input that did not parse was dropped without notice, and an operand position holding an
   operator became the literal false. Both are now parse errors: the expression is denied and
   the notation names the first token that could not be placed.

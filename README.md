@@ -122,7 +122,7 @@ and `docs/demo/pkg/SHA256SUMS` pins its two files for each release.
 |---|---|
 | `must φ` · `may φ` · `must_not φ` | O(φ) · P(φ) · O(¬φ) |
 | `always φ` · `eventually φ` · `never φ` | G(φ) · F(φ) · G(¬φ) |
-| `always φ within N`, also `before N`, `deadline N` | the same, bounded at logical time N |
+| `always φ within N` · `eventually φ within N` (also `before N`, `deadline N`) | G≤N(φ), required until logical time N · F≤N(φ), required by it |
 | `knows agent φ` · `believes agent φ` · `common_knowledge φ` | K(agent, φ) · B(agent, φ) · C(φ) |
 | `φ and ψ`, `or`, `implies`, `iff`, `xor` | ∧ ∨ → ↔ ⊕, lowest precedence `iff` |
 
@@ -383,7 +383,7 @@ Details, code snippets, and honest status notes for both:
 ## Status & Roadmap
 
 v0.1.3 — the crates on [crates.io](https://crates.io/crates/urge) are the published
-releases. The `std`/`alloc` tiers are complete: 57 tests passing, clippy- and
+releases. The `std`/`alloc` tiers are complete: 59 tests passing, clippy- and
 rustfmt-clean, CI on every push. 0.1.3 corrects the parser and the cross-validator and adds
 the deny explanation and `urge-eval`; see [`CHANGELOG.md`](CHANGELOG.md). The heap-free embedded tier and a dedicated
 probabilistic engine are the two big open items. Full status table and

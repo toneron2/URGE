@@ -126,6 +126,16 @@ mod tests {
     }
 
     #[test]
+    fn a_bound_is_printed_and_kept() {
+        assert_eq!(
+            run("eventually reply within 30", r#"{"reply": false}"#)["formal_notation"],
+            "F≤30(reply)"
+        );
+        let v = run("next x within 3", r#"{"x": true}"#);
+        assert_eq!(v["valid"], false, "a bound after next is not a bound: {v}");
+    }
+
+    #[test]
     fn never_means_never() {
         assert_eq!(run("never breach", r#"{"breach": false}"#)["valid"], true);
         assert_eq!(run("never breach", r#"{"breach": true}"#)["valid"], false);
