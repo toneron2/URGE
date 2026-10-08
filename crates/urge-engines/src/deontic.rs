@@ -192,13 +192,22 @@ impl LogicEngine for DeonticEngine {
                     trace,
                     cross_validation: CrossValidation::ok(),
                     #[cfg(feature = "alloc")]
-                    formal_notation: alloc::format!(
-                        "{}({}) for agent={} [{}]",
-                        deontic_symbol(*modality),
-                        action,
-                        agent,
-                        source.as_deref().unwrap_or("no-source")
-                    ),
+                    formal_notation: if *modality == SemanticClass::Forbidden {
+                        alloc::format!(
+                            "O(¬{}) for agent={} [{}]",
+                            action,
+                            agent,
+                            source.as_deref().unwrap_or("no-source")
+                        )
+                    } else {
+                        alloc::format!(
+                            "{}({}) for agent={} [{}]",
+                            deontic_symbol(*modality),
+                            action,
+                            agent,
+                            source.as_deref().unwrap_or("no-source")
+                        )
+                    },
                     #[cfg(feature = "alloc")]
                     citations: alloc::vec![],
                 })
@@ -227,11 +236,13 @@ impl LogicEngine for DeonticEngine {
                     trace,
                     cross_validation: CrossValidation::ok(),
                     #[cfg(feature = "alloc")]
-                    formal_notation: alloc::format!(
-                        "{}({})",
-                        deontic_symbol(*op),
-                        body_result.formal_notation
-                    ),
+                    formal_notation: if *op == SemanticClass::Forbidden {
+                        // Forbidden is O(¬φ). Printed as F(φ) until 0.1.3, the letter the
+                        // temporal engine prints for Finally (eventually).
+                        alloc::format!("O(¬{})", body_result.formal_notation)
+                    } else {
+                        alloc::format!("{}({})", deontic_symbol(*op), body_result.formal_notation)
+                    },
                     #[cfg(feature = "alloc")]
                     citations: alloc::vec![],
                 })
@@ -246,7 +257,7 @@ fn deontic_symbol(cls: SemanticClass) -> &'static str {
     match cls {
         SemanticClass::Obligatory => "O",
         SemanticClass::Permitted => "P",
-        SemanticClass::Forbidden => "F",
+        SemanticClass::Forbidden => "O¬",
         SemanticClass::Waived => "W",
         _ => "?",
     }

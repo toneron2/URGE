@@ -40,10 +40,10 @@ healthcare = []   # enables HIPAA/clinical policy helpers
 embedded   = []   # tightens defaults for embedded targets
 
 [dependencies]
-urge-core    = { path = "../urge-core",    version = "0.1.2" }
-urge-engines = { path = "../urge-engines", version = "0.1.2" }
-urge-meta    = { path = "../urge-meta",    version = "0.1.2" }
-urge-monitor = { path = "../urge-monitor", version = "0.1.2" }
+urge-core    = { path = "../urge-core",    version = "0.1.3" }
+urge-engines = { path = "../urge-engines", version = "0.1.3" }
+urge-meta    = { path = "../urge-meta",    version = "0.1.3" }
+urge-monitor = { path = "../urge-monitor", version = "0.1.3" }
 serde        = { version = "1", features = ["derive"], optional = true }
 serde_json   = { version = "1", optional = true }
 heapless     = { version = "0.8", default-features = false }

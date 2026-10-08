@@ -17,11 +17,14 @@ alloc   = ["urge-core/alloc", "urge-engines/alloc"]
 std     = ["alloc", "urge-core/std", "urge-engines/std", "dep:regex"]
 regex   = ["dep:regex", "std"]
 serde   = ["urge-core/serde", "urge-engines/serde", "dep:serde"]
+# JSON in, JSON out for non-Rust callers (urge-wasm, urge-cli): src/json.rs
+json    = ["std", "serde", "dep:serde_json"]
 
 [dependencies]
-urge-core    = { path = "../urge-core",    version = "0.1.2" }
-urge-engines = { path = "../urge-engines", version = "0.1.2" }
+urge-core    = { path = "../urge-core",    version = "0.1.3" }
+urge-engines = { path = "../urge-engines", version = "0.1.3" }
 serde        = { version = "1", features = ["derive"], optional = true }
+serde_json   = { version = "1", optional = true }
 regex        = { version = "1", default-features = false, features = ["std"], optional = true }
 heapless     = { version = "0.8", default-features = false }
 log          = { version = "0.4", default-features = false }

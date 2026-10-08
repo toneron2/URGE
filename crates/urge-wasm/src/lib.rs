@@ -4,13 +4,13 @@
 //! context object in, the full serialized `Verdict` out. The demo page in
 //! `docs/demo/` is the only intended consumer; the crate is `publish = false`.
 
-use urge_core::engine::{ContextValue, EvalContext};
-use urge_meta::{GovernancePipeline, PipelineConfig};
+use urge_meta::PipelineConfig;
 use wasm_bindgen::prelude::*;
 
 /// Evaluate `expr` against `ctx_json`, a flat JSON object of slots
 /// (`{"authorized": true, "battery_pct": 80}`). Returns the full `Verdict`
-/// serialized as JSON, or `{"error": "..."}` on malformed input.
+/// serialized as JSON with `version` and, on a deny, `because` (each clause, the facts it
+/// read, and the clauses that decided the deny), or `{"error": "..."}` on malformed input.
 #[wasm_bindgen]
 pub fn evaluate_str(expr: &str, ctx_json: &str) -> String {
     evaluate_impl(expr, ctx_json)
@@ -23,61 +23,9 @@ pub fn version() -> String {
 }
 
 fn evaluate_impl(expr: &str, ctx_json: &str) -> String {
-    let parsed: serde_json::Value = match serde_json::from_str(ctx_json) {
-        Ok(v) => v,
-        Err(e) => return err_json(&format!("context is not valid JSON: {e}")),
-    };
-    let obj = match parsed.as_object() {
-        Some(o) => o,
-        None => return err_json("context must be a JSON object of slots"),
-    };
-
-    let mut slots: Vec<(&'static str, ContextValue)> = Vec::with_capacity(obj.len());
-    for (key, value) in obj {
-        let cv = match value {
-            serde_json::Value::Bool(b) => ContextValue::Bool(*b),
-            serde_json::Value::Number(n) if n.is_i64() => {
-                ContextValue::Integer(n.as_i64().unwrap_or(0))
-            }
-            serde_json::Value::Number(n) => ContextValue::Float(n.as_f64().unwrap_or(0.0)),
-            other => return err_json(&format!("slot '{key}' has unsupported type: {other}")),
-        };
-        slots.push((intern(key), cv));
-    }
-
-    let ctx = EvalContext {
-        slots: &slots,
-        logical_time: 0,
-        depth_limit: 32,
-    };
-
-    // Exhaustive config: every applicable paradigm certifies, as in the
-    // README's agent-gate example.
-    let pipeline = GovernancePipeline::new(PipelineConfig::healthcare());
-    let verdict = pipeline.evaluate_str(expr, &ctx);
-
-    serde_json::to_string(&verdict)
-        .unwrap_or_else(|e| err_json(&format!("verdict serialization failed: {e}")))
-}
-
-fn err_json(msg: &str) -> String {
-    serde_json::to_string(&serde_json::json!({ "error": msg })).unwrap_or_default()
-}
-
-/// `EvalContext` slot names are `&'static str` (a no_std design choice), so
-/// dynamic names from the browser are interned: each distinct name is leaked
-/// once and reused for the life of the page. Bounded by the number of
-/// distinct identifiers the user types.
-fn intern(s: &str) -> &'static str {
-    use std::sync::Mutex;
-    static POOL: Mutex<Vec<&'static str>> = Mutex::new(Vec::new());
-    let mut pool = POOL.lock().expect("intern pool poisoned");
-    if let Some(hit) = pool.iter().find(|k| **k == s) {
-        return hit;
-    }
-    let leaked: &'static str = Box::leak(s.to_owned().into_boxed_str());
-    pool.push(leaked);
-    leaked
+    // Exhaustive config: every applicable paradigm certifies, as in the README's agent-gate
+    // example. The JSON handling is urge-meta's (feature `json`), shared with `urge-eval`.
+    urge_meta::json::evaluate(expr, ctx_json, PipelineConfig::healthcare()).1
 }
 
 #[cfg(test)]

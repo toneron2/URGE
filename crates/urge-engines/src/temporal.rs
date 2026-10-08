@@ -93,8 +93,10 @@ fn eval_temporal(
                 SemanticClass::Globally => {
                     // G(φ): φ must hold at current time.
                     // We evaluate the body as a current-state check.
+                    // G≤d(φ), `always φ within d`: φ is required until logical time d, and no
+                    // longer after it.
                     let body_result = crate::boolean::BooleanEngine.evaluate(body, ctx)?;
-                    let valid = body_result.valid;
+                    let valid = body_result.valid || bound_ns.is_some_and(|d| now > d);
                     trace.push(TraceEntry {
                         stage: Stage::EngineEvaluation,
                         paradigm: Some(Paradigm::Temporal),
@@ -109,7 +111,14 @@ fn eval_temporal(
                             EntryOutcome::Denied
                         },
                     });
-                    Ok((valid, alloc::format!("G({})", body_result.formal_notation)))
+                    Ok((
+                        valid,
+                        alloc::format!(
+                            "G{}({})",
+                            bound_mark(*bound_ns),
+                            body_result.formal_notation
+                        ),
+                    ))
                 }
 
                 SemanticClass::Finally => {
@@ -134,7 +143,14 @@ fn eval_temporal(
                             EntryOutcome::Denied
                         },
                     });
-                    Ok((valid, alloc::format!("F({})", body_result.formal_notation)))
+                    Ok((
+                        valid,
+                        alloc::format!(
+                            "F{}({})",
+                            bound_mark(*bound_ns),
+                            body_result.formal_notation
+                        ),
+                    ))
                 }
 
                 SemanticClass::Next => {
@@ -224,4 +240,10 @@ fn eval_temporal(
         }
         _ => Ok((true, ())),
     }
+}
+
+/// `≤d` for a bounded operator, nothing for an unbounded one.
+#[cfg(feature = "alloc")]
+fn bound_mark(bound: Option<u64>) -> alloc::string::String {
+    bound.map(|d| alloc::format!("≤{d}")).unwrap_or_default()
 }

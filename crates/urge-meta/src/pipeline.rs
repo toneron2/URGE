@@ -150,7 +150,18 @@ impl GovernancePipeline {
         let mut parser = Parser::new(tokens);
         let ast = match parser.parse() {
             Some(a) => a,
-            None => return Verdict::deny_immediate("failed to parse expression"),
+            None => {
+                // The reason goes in the notation, the verdict's one owned string: a trace
+                // description is &'static by design (no_std).
+                let mut v = Verdict::deny_immediate("failed to parse expression");
+                v.formal_notation = alloc::format!(
+                    "unparsed: {}",
+                    parser
+                        .error
+                        .unwrap_or_else(|| String::from("no reason recorded"))
+                );
+                return v;
+            }
         };
 
         self.evaluate_ast(&ast, active_paradigms, ctx, trace)
@@ -324,6 +335,43 @@ mod tests {
         let verdict = pipeline.evaluate_str("must true", &ctx);
         // Deontic engine evaluates the inner expression.
         assert!(verdict.paradigms_evaluated.contains(Paradigm::Deontic));
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn bounds_follow_logical_time() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::default());
+        let slots = &[
+            ("reply", ContextValue::Bool(false)),
+            ("guard", ContextValue::Bool(false)),
+        ];
+        let at = |t: u64| EvalContext {
+            slots,
+            logical_time: t,
+            depth_limit: 16,
+        };
+        // eventually φ within 30: open until 30, failed after it without φ
+        assert!(
+            pipeline
+                .evaluate_str("eventually reply within 30", &at(10))
+                .valid
+        );
+        assert!(
+            !pipeline
+                .evaluate_str("eventually reply within 30", &at(50))
+                .valid
+        );
+        // always φ within 30: required until 30, no longer after it
+        assert!(
+            !pipeline
+                .evaluate_str("always guard within 30", &at(10))
+                .valid
+        );
+        assert!(
+            pipeline
+                .evaluate_str("always guard within 30", &at(50))
+                .valid
+        );
     }
 
     #[test]
