@@ -96,6 +96,40 @@ tier, depend on [`urge-core`](https://crates.io/crates/urge-core) directly.
 For obligations that live *across* requests (deadlines, escalation,
 violation events), see `urge-monitor` and the obligation lifecycle below.
 
+### From any language
+
+`urge-eval` takes one JSON request on standard input and writes the verdict as one line of
+JSON. On a deny, `because` lists each clause with the facts it read and names the clauses
+that decided it. The exit status is 0 for permitted, 1 for denied and 2 for malformed input.
+
+```console
+$ cargo install --git https://github.com/toneron2/URGE --tag v0.1.3 urge-cli
+$ echo '{"expr": "must authorized and must_not breach", "facts": {"authorized": false}}' | urge-eval
+```
+
+| Field | Meaning |
+|---|---|
+| `expr` | the expression |
+| `facts` | a flat object of booleans and numbers; a fact not supplied reads as false |
+| `config` | `healthcare` (default; every paradigm, threshold 0.80), `standard` (0.50) or `embedded` (0.20) |
+
+The browser build in `docs/demo/pkg/` exposes the same call, `evaluate_str(expr, facts_json)`,
+and `docs/demo/pkg/SHA256SUMS` pins its two files for each release.
+
+### Expression syntax
+
+| Form | Reads as |
+|---|---|
+| `must φ` · `may φ` · `must_not φ` | O(φ) · P(φ) · O(¬φ) |
+| `always φ` · `eventually φ` · `never φ` | G(φ) · F(φ) · G(¬φ) |
+| `always φ within N`, also `before N`, `deadline N` | the same, bounded at logical time N |
+| `knows agent φ` · `believes agent φ` · `common_knowledge φ` | K(agent, φ) · B(agent, φ) · C(φ) |
+| `φ and ψ`, `or`, `implies`, `iff`, `xor` | ∧ ∨ → ↔ ⊕, lowest precedence `iff` |
+
+A prefix operator applies to the next operand only: `must a or b` is `O(a) ∨ b`. Parentheses
+are not part of the grammar. An expression that does not parse completely is denied, and
+the notation names the first token that could not be placed.
+
 ---
 
 ## Architecture — Figure 26 Pipeline
@@ -145,6 +179,18 @@ VERDICT { valid, confidence, paradigms_evaluated, trace, formal_notation, citati
 ```
 
 Every stage emits `TraceEntry` records. The complete trace IS the compliance audit trail.
+
+---
+
+## How Conflicting Engine Results Resolve
+
+Engine results resolve in a fixed order. A cross-paradigm conflict denies: modal necessity
+against a boolean false, a violated temporal constraint beside an active obligation, or a
+paraconsistent contradiction. Otherwise a deontic denial overrides the other engines.
+Otherwise the majority of engines decides, and a tie permits. Confidence is the share of
+engines that agree. A connective whose sides need different engines is decided from its
+sides, each evaluated by its own engines; its confidence is the weaker side's, and only the
+parts of an `and` are checked against each other for conflicts.
 
 ---
 
@@ -287,7 +333,11 @@ urge/                          Cargo workspace
 │   │   ├── tokenizer.rs       Unicode + keyword scanner
 │   │   ├── parser.rs          Pratt AST builder
 │   │   ├── router.rs          Deterministic engine SWITCH
-│   │   └── validator.rs       Cross-system validation  ← key differentiator
+│   │   ├── validator.rs       Cross-system validation  ← key differentiator
+│   │   ├── explain.rs         The clauses and facts that decided a deny
+│   │   └── json.rs            JSON in, JSON out (feature `json`)
+│   │
+│   ├── urge-cli/              urge-eval: one decision from the command line
 │   │
 │   ├── urge-monitor/          Continuous governance over event streams
 │   │   ├── obligation.rs      Lifecycle: PENDING→ACTIVE→SATISFIED/VIOLATED
@@ -332,10 +382,10 @@ Details, code snippets, and honest status notes for both:
 
 ## Status & Roadmap
 
-v0.1.2 — published on [crates.io](https://crates.io/crates/urge). The
-`std`/`alloc` tiers are complete: 43 tests passing, clippy- and rustfmt-clean,
-CI on every push. 0.1.2 fixed three `no_std` breaks that only appear outside the
-workspace, where feature unification hides them. The heap-free embedded tier and a dedicated
+v0.1.3 — the crates on [crates.io](https://crates.io/crates/urge) are the published
+releases. The `std`/`alloc` tiers are complete: 57 tests passing, clippy- and
+rustfmt-clean, CI on every push. 0.1.3 corrects the parser and the cross-validator and adds
+the deny explanation and `urge-eval`; see [`CHANGELOG.md`](CHANGELOG.md). The heap-free embedded tier and a dedicated
 probabilistic engine are the two big open items. Full status table and
 priorities: [`ROADMAP.md`](ROADMAP.md).
 

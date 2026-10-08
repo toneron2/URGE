@@ -1,7 +1,8 @@
 /**
  * Evaluate `expr` against `ctx_json`, a flat JSON object of slots
  * (`{"authorized": true, "battery_pct": 80}`). Returns the full `Verdict`
- * serialized as JSON, or `{"error": "..."}` on malformed input.
+ * serialized as JSON with `version` and, on a deny, `because` (each clause, the facts it
+ * read, and the clauses that decided the deny), or `{"error": "..."}` on malformed input.
  * @param {string} expr
  * @param {string} ctx_json
  * @returns {string}

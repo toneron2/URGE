@@ -17,14 +17,31 @@ use urge_core::{
 use urge_engines::all_engines;
 
 #[cfg(feature = "alloc")]
-use urge_core::{
-    ast::Expr,
-    decision::{Confidence, CrossValidation},
-    symbol::SemanticClass,
-};
+use urge_core::{ast::Expr, decision::CrossValidation, symbol::SemanticClass};
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
+
+/// The one trace entry of a connective decided from its fragments. The validator passes such a
+/// verdict through as it is: it already carries its sides' agreement and its parts' conflicts.
+pub(crate) const DECOMPOSED: &str = "connective decided from its fragments";
+
+/// One side's notation: its engines' notations, each once, joined with ∧.
+#[cfg(feature = "alloc")]
+fn side_notation(results: &[Result<Verdict, EngineError>]) -> alloc::string::String {
+    let mut seen: Vec<&str> = Vec::new();
+    for v in results.iter().filter_map(|v| v.as_ref().ok()) {
+        let n = v.formal_notation.as_str();
+        if !n.is_empty() && !seen.contains(&n) {
+            seen.push(n);
+        }
+    }
+    if seen.is_empty() {
+        alloc::string::String::from("?")
+    } else {
+        seen.join(" ∧ ")
+    }
+}
 
 /// The engine router.
 pub struct EngineRouter;
@@ -81,14 +98,21 @@ impl EngineRouter {
 
         // Mixed-paradigm decomposition (Figure 26, stage 5: "each selected
         // engine evaluates its AST fragment"). A boolean connective over
-        // non-boolean children — e.g. `must x and always y` — is claimed only
+        // non-boolean children -- e.g. `must x and always y` -- is claimed only
         // by the Boolean engine, which cannot evaluate the deontic/temporal
-        // children and errors out. In that case, route each side as its own
-        // fragment so every paradigm's engine sees its fragment, then append a
-        // boolean-skeleton verdict combining the sides so the connective's
-        // truth-functional semantics are preserved. The fragment verdicts stay
-        // in the result set, which is what lets stage 6 cross-check paradigms
-        // against each other.
+        // children and errors out. In that case each side is routed as its own
+        // fragment and decided by its own engines (and cross-validated within
+        // itself), and the connective is decided from the two sides' results.
+        //
+        // ONE verdict comes back for the connective. Until 0.1.3 the sides'
+        // verdicts were returned beside it as peers, so stage 6 voted over
+        // different propositions and let a false deontic side deny the whole:
+        // `must a or b` was decided as O(a) ∧ b, and a clean refusal reported
+        // 60-80 % confidence. Now the verdict carries the connective's own
+        // truth, the weaker side's engine agreement as its confidence, and, for
+        // `and` only, the conflicts stage 6 finds between its parts: an `and`
+        // asserts both sides at once, while `or`, `implies`, `iff` and `xor`
+        // relate alternatives that are not checked against each other.
         if results.iter().all(|r| r.is_err()) && depth < ctx.depth_limit {
             if let Expr::Binary {
                 op, left, right, ..
@@ -111,11 +135,11 @@ impl EngineRouter {
 
                     let left_results =
                         Self::route_inner(left, active_paradigms, ctx, trace, depth + 1);
-                    let (left_valid, _, _) =
+                    let (left_valid, left_conf, _) =
                         crate::validator::CrossValidator::validate(&left_results, trace);
                     let right_results =
                         Self::route_inner(right, active_paradigms, ctx, trace, depth + 1);
-                    let (right_valid, _, _) =
+                    let (right_valid, right_conf, _) =
                         crate::validator::CrossValidator::validate(&right_results, trace);
 
                     let combined = match op {
@@ -126,22 +150,51 @@ impl EngineRouter {
                         SemanticClass::ExclusiveOr => left_valid ^ right_valid,
                         _ => unreachable!(),
                     };
+                    let (l, r) = (side_notation(&left_results), side_notation(&right_results));
+                    let notation = match op {
+                        SemanticClass::Conjunction => alloc::format!("{l} ∧ {r}"),
+                        SemanticClass::Disjunction => alloc::format!("({l}) ∨ ({r})"),
+                        SemanticClass::Implication => alloc::format!("({l}) → ({r})"),
+                        SemanticClass::Biconditional => alloc::format!("({l}) ↔ ({r})"),
+                        _ => alloc::format!("({l}) ⊕ ({r})"),
+                    };
 
-                    let mut skeleton_paradigms = ParadigmSet::empty();
-                    skeleton_paradigms.insert(Paradigm::Boolean);
-
-                    results.extend(left_results);
-                    results.extend(right_results);
-                    // Empty notation: the fragment verdicts already carry the
-                    // per-paradigm notations, which synthesis joins with ∧.
+                    let mut parts = left_results;
+                    parts.extend(right_results);
+                    let cross = if matches!(op, SemanticClass::Conjunction) {
+                        crate::validator::CrossValidator::validate(&parts, trace).2
+                    } else {
+                        CrossValidation::ok()
+                    };
+                    let mut paradigms = ParadigmSet::empty();
+                    paradigms.insert(Paradigm::Boolean);
+                    let mut citations = alloc::vec![];
+                    for v in parts.iter().filter_map(|v| v.as_ref().ok()) {
+                        for p in v.paradigms_evaluated.iter() {
+                            paradigms.insert(p);
+                        }
+                        citations.extend(v.citations.iter().cloned());
+                    }
+                    let valid = combined && cross.consistent;
+                    let mut own = LogicTrace::new();
+                    own.push(TraceEntry {
+                        stage: Stage::CrossValidation,
+                        paradigm: Some(Paradigm::Boolean),
+                        description: DECOMPOSED,
+                        outcome: if valid {
+                            EntryOutcome::Permitted
+                        } else {
+                            EntryOutcome::Denied
+                        },
+                    });
                     results.push(Ok(Verdict {
-                        valid: combined,
-                        confidence: Confidence::CERTAIN,
-                        paradigms_evaluated: skeleton_paradigms,
-                        trace: LogicTrace::new(),
-                        cross_validation: CrossValidation::ok(),
-                        formal_notation: alloc::string::String::new(),
-                        citations: alloc::vec![],
+                        valid,
+                        confidence: core::cmp::min(left_conf, right_conf),
+                        paradigms_evaluated: paradigms,
+                        trace: own,
+                        cross_validation: cross,
+                        formal_notation: notation,
+                        citations,
                     }));
                     return results;
                 }

@@ -12,8 +12,20 @@
 //! binary_rhs::= binary_op expr
 //! binary_op ::= AND | OR | IMPLIES | IFF | XOR | UNTIL | RELEASE
 //!             | EQ | NEQ | LT | LTE | GT | GTE
-//! prefix    ::= IDENTIFIER | LITERAL | '(' expr ')'
+//! prefix    ::= IDENTIFIER | LITERAL
+//!             | (GLOBALLY | FINALLY | NEXT) expr bound?
+//!             | NEVER expr bound?                    -- G(¬expr)
+//!             | (KNOWS | BELIEVES) IDENTIFIER expr   -- K(agent, expr), B(agent, expr)
+//!             | COMMON_KNOWLEDGE expr
+//! bound     ::= (WITHIN | BEFORE | DEADLINE) NUMBER  -- in EvalContext::logical_time units
 //! ```
+//!
+//! Parentheses are not part of the grammar: the tokenizer skips them, so a prefix
+//! operator applies to the next operand only (`must a or b` is `O(a) ∨ b`).
+//!
+//! An expression must parse completely. An operator with no supported reading here, or
+//! input left over after the expression, is a parse error with a reason in
+//! [`Parser::error`]; the pipeline denies it and names the reason.
 
 use urge_core::{
     ast::{node, AstNode, Expr, Literal, Token},
@@ -28,16 +40,57 @@ use alloc::vec::Vec;
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    /// Why the last [`Parser::parse`] returned `None`.
+    pub error: Option<alloc::string::String>,
 }
 
 #[cfg(feature = "alloc")]
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, pos: 0 }
+        Parser {
+            tokens,
+            pos: 0,
+            error: None,
+        }
     }
 
+    /// Parse the whole token stream. `None` when it does not parse completely; the
+    /// reason is in [`Parser::error`].
     pub fn parse(&mut self) -> Option<AstNode> {
-        self.parse_expr(0)
+        let ast = self.parse_expr(0)?;
+        if let Some(t) = self.peek().cloned() {
+            return self.fail(alloc::format!(
+                "unparsed input from '{}' at offset {}",
+                t.raw,
+                t.offset
+            ));
+        }
+        Some(ast)
+    }
+
+    fn fail(&mut self, reason: alloc::string::String) -> Option<AstNode> {
+        if self.error.is_none() {
+            self.error = Some(reason);
+        }
+        None
+    }
+
+    /// A bound after a temporal operand: `within N`, `before N` or `deadline N`.
+    fn bound(&mut self) -> Option<u64> {
+        let t = self.peek()?;
+        if !matches!(t.raw.as_str(), "within" | "before" | "deadline") {
+            return None;
+        }
+        let n = self.tokens.get(self.pos + 1)?;
+        if n.class != SemanticClass::NumericLiteral {
+            return None;
+        }
+        let v: f64 = n.raw.as_str().parse().ok()?;
+        if v.is_nan() || v < 0.0 {
+            return None;
+        }
+        self.pos += 2;
+        Some(v as u64)
     }
 
     fn peek(&self) -> Option<&Token> {
@@ -77,7 +130,14 @@ impl Parser {
 
     fn parse_expr(&mut self, min_bp: u8) -> Option<AstNode> {
         // ── Prefix / atom ──────────────────────────────────────────────────
-        let token = self.peek()?.clone();
+        let token = match self.peek() {
+            Some(t) => t.clone(),
+            None => {
+                return self.fail(alloc::string::String::from(
+                    "the expression ends where an operand is expected",
+                ))
+            }
+        };
 
         let mut lhs = match token.class {
             // Literals
@@ -131,15 +191,62 @@ impl Parser {
             }
 
             SemanticClass::Globally | SemanticClass::Finally | SemanticClass::Next => {
+                // `never φ` is the dictionary's Globally(¬): G(¬φ), not G(φ).
+                let never = token.raw.as_str() == "never";
                 let op = token.class;
                 self.consume();
-                let body = self.parse_expr(20)?;
+                let mut body = self.parse_expr(20)?;
+                if never {
+                    let mut neg = ParadigmSet::empty();
+                    for &p in SemanticClass::Negation.paradigms() {
+                        neg.insert(p);
+                    }
+                    body = node(Expr::Unary {
+                        op: SemanticClass::Negation,
+                        operand: body,
+                        paradigms: neg,
+                    });
+                }
+                let bound_ns = self.bound();
                 let mut ps = ParadigmSet::empty();
                 ps.insert(urge_core::engine::Paradigm::Temporal);
                 node(Expr::TemporalConstraint {
                     op,
                     body,
-                    bound_ns: None,
+                    bound_ns,
+                    paradigms: ps,
+                })
+            }
+
+            // Epistemic: `knows agent φ`, `believes agent φ`, `common_knowledge φ`.
+            SemanticClass::Knows | SemanticClass::Believes | SemanticClass::CommonKnowledge => {
+                let op = token.class;
+                self.consume();
+                let mut agent = heapless::String::new();
+                if op != SemanticClass::CommonKnowledge {
+                    match self.peek().cloned() {
+                        Some(a) if a.class == SemanticClass::Identifier => {
+                            self.consume();
+                            for c in a.raw.chars().take(16) {
+                                let _ = agent.push(c);
+                            }
+                        }
+                        _ => {
+                            return self.fail(alloc::format!(
+                                "'{}' needs an agent: {} <agent> <claim>",
+                                token.raw,
+                                token.raw
+                            ))
+                        }
+                    }
+                }
+                let body = self.parse_expr(20)?;
+                let mut ps = ParadigmSet::empty();
+                ps.insert(urge_core::engine::Paradigm::Epistemic);
+                node(Expr::Apply {
+                    op,
+                    agent,
+                    body,
                     paradigms: ps,
                 })
             }
@@ -174,9 +281,15 @@ impl Parser {
                 })
             }
 
+            // Anything else in operand position (a binary operator, a string, an operator
+            // with no reading here such as distributed_knowledge) is an error, never the
+            // literal false it used to become.
             _ => {
-                self.consume();
-                node(Expr::Lit(Literal::Bool(false)))
+                return self.fail(alloc::format!(
+                    "'{}' at offset {} cannot start an operand",
+                    token.raw,
+                    token.offset
+                ))
             }
         };
 
@@ -258,6 +371,92 @@ mod tests {
             ast.unwrap().as_ref(),
             Expr::Unary {
                 op: SemanticClass::Obligatory,
+                ..
+            }
+        ));
+    }
+
+    fn parse_str(s: &str) -> (Option<AstNode>, Option<alloc::string::String>) {
+        let mut p = Parser::new(Tokenizer::new().tokenize(s));
+        let a = p.parse();
+        (a, p.error)
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn never_is_globally_not() {
+        let (ast, _) = parse_str("never breach");
+        match ast.unwrap().as_ref() {
+            Expr::TemporalConstraint {
+                op: SemanticClass::Globally,
+                body,
+                ..
+            } => {
+                assert!(matches!(
+                    body.as_ref(),
+                    Expr::Unary {
+                        op: SemanticClass::Negation,
+                        ..
+                    }
+                ))
+            }
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn knows_takes_an_agent() {
+        let (ast, _) = parse_str("knows nurse consent_given");
+        assert!(
+            matches!(ast.unwrap().as_ref(), Expr::Apply { op: SemanticClass::Knows, agent, .. } if agent.as_str() == "nurse")
+        );
+        let (ast, err) = parse_str("knows");
+        assert!(ast.is_none() && err.unwrap().contains("needs an agent"));
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn a_bound_follows_a_temporal_operand() {
+        let (ast, _) = parse_str("eventually reply within 30");
+        assert!(matches!(
+            ast.unwrap().as_ref(),
+            Expr::TemporalConstraint {
+                op: SemanticClass::Finally,
+                bound_ns: Some(30),
+                ..
+            }
+        ));
+        let (ast, _) = parse_str("always heartbeat deadline 10");
+        assert!(matches!(
+            ast.unwrap().as_ref(),
+            Expr::TemporalConstraint {
+                op: SemanticClass::Globally,
+                bound_ns: Some(10),
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn leftover_input_and_unknown_operands_are_errors() {
+        let (ast, err) = parse_str("agent must obtain_consent");
+        assert!(ast.is_none() && err.unwrap().contains("unparsed input from 'must'"));
+        let (ast, err) = parse_str("distributed_knowledge x");
+        assert!(ast.is_none() && err.unwrap().contains("cannot start an operand"));
+        let (ast, err) = parse_str("must");
+        assert!(ast.is_none() && err.unwrap().contains("ends where an operand"));
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn a_prefix_operator_binds_its_operand_only() {
+        let (ast, _) = parse_str("must a or b");
+        assert!(matches!(
+            ast.unwrap().as_ref(),
+            Expr::Binary {
+                op: SemanticClass::Disjunction,
                 ..
             }
         ));

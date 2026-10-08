@@ -150,7 +150,18 @@ impl GovernancePipeline {
         let mut parser = Parser::new(tokens);
         let ast = match parser.parse() {
             Some(a) => a,
-            None => return Verdict::deny_immediate("failed to parse expression"),
+            None => {
+                // The reason goes in the notation, the verdict's one owned string: a trace
+                // description is &'static by design (no_std).
+                let mut v = Verdict::deny_immediate("failed to parse expression");
+                v.formal_notation = alloc::format!(
+                    "unparsed: {}",
+                    parser
+                        .error
+                        .unwrap_or_else(|| String::from("no reason recorded"))
+                );
+                return v;
+            }
         };
 
         self.evaluate_ast(&ast, active_paradigms, ctx, trace)

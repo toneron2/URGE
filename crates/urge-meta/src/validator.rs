@@ -60,6 +60,30 @@ impl CrossValidator {
             );
         }
 
+        // A connective the router decided from its fragments is one verdict that already
+        // carries its sides' agreement (as its confidence) and its parts' conflicts.
+        if successful.len() == 1
+            && successful[0].trace.entries.last().map(|e| e.description)
+                == Some(crate::router::DECOMPOSED)
+        {
+            let v = successful[0];
+            trace.push(TraceEntry {
+                stage: Stage::CrossValidation,
+                paradigm: None,
+                description: if v.cross_validation.consistent {
+                    "cross-validation: consistent (connective decided from its fragments)"
+                } else {
+                    "cross-validation: conflicts detected between the parts of an and"
+                },
+                outcome: if v.cross_validation.consistent {
+                    EntryOutcome::Evaluated
+                } else {
+                    EntryOutcome::Conflict
+                },
+            });
+            return (v.valid, v.confidence, v.cross_validation.clone());
+        }
+
         let mut conflicts: u8 = 0;
         let mut conflict_detail = None;
 

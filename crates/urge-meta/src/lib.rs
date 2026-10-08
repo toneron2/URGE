@@ -46,6 +46,10 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "alloc")]
+pub mod explain;
+#[cfg(feature = "json")]
+pub mod json;
 pub mod parser;
 pub mod pipeline;
 pub mod router;
