@@ -113,7 +113,7 @@ $ echo '{"expr": "must authorized and must_not breach", "facts": {"authorized": 
 | Field | Meaning |
 |---|---|
 | `expr` | the expression |
-| `facts` | a flat object of booleans; a fact not supplied reads as false. A number is accepted but reads as false until relational operators land ([#4](https://github.com/toneron2/URGE/issues/4)) |
+| `facts` | a flat object of booleans and numbers; a fact not supplied reads as false |
 | `config` | `healthcare` (default; every paradigm, threshold 0.80), `standard` (0.50) or `embedded` (0.20) |
 
 The browser build in `docs/demo/pkg/` exposes the same call, `evaluate_str(expr, facts_json)`,
