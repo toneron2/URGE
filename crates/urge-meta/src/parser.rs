@@ -182,7 +182,13 @@ impl Parser {
                 })
             }
 
-            SemanticClass::Necessity | SemanticClass::Possibility => {
+            // Modal □ ◇, fuzzy `mu φ`, and the Belnap markers `both φ` / `neither φ`: one
+            // operand each, routed by the operator's own paradigm.
+            SemanticClass::Necessity
+            | SemanticClass::Possibility
+            | SemanticClass::MembershipDegree
+            | SemanticClass::BothTrueAndFalse
+            | SemanticClass::NeitherTrueNorFalse => {
                 let op = token.class;
                 self.consume();
                 let operand = self.parse_expr(20)?;
@@ -423,6 +429,22 @@ mod tests {
                 ))
             }
             other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn fuzzy_and_belnap_prefixes_parse() {
+        for (src, op) in [
+            ("mu risk", SemanticClass::MembershipDegree),
+            ("both sensor_ok", SemanticClass::BothTrueAndFalse),
+            ("neither sensor_ok", SemanticClass::NeitherTrueNorFalse),
+        ] {
+            let (ast, err) = parse_str(src);
+            assert!(
+                matches!(ast.as_deref(), Some(Expr::Unary { op: o, .. }) if *o == op),
+                "{src}: {err:?}"
+            );
         }
     }
 

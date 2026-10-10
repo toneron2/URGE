@@ -2,7 +2,7 @@
 //!
 //! Maps Unicode codepoints (and ASCII keyword aliases) to their semantic class
 //! within one or more logic paradigms. This is the operator dictionary at the
-//! foundation of the architecture: 61 entries today, across eight paradigm tags.
+//! foundation of the architecture: 63 entries today, across eight paradigm tags.
 //!
 //! The dictionary is a **static, compile-time table** — zero runtime allocation,
 //! suitable for ROM-resident firmware.
@@ -427,6 +427,19 @@ impl UnicodeSemanticDictionary {
             keyword: Some("unlikely"),
             name: "Probability",
             class: SemanticClass::Probability,
+        },
+        // ── Paraconsistent (Belnap) ────────────────────────────────────────
+        Symbol {
+            codepoint: 0x0000,
+            keyword: Some("both"),
+            name: "BothTrueAndFalse",
+            class: SemanticClass::BothTrueAndFalse,
+        },
+        Symbol {
+            codepoint: 0x0000,
+            keyword: Some("neither"),
+            name: "NeitherTrueNorFalse",
+            class: SemanticClass::NeitherTrueNorFalse,
         },
         // ── Quantifiers ────────────────────────────────────────────────────
         Symbol {
