@@ -116,7 +116,8 @@ pub struct EvalContext<'a> {
 }
 
 impl<'a> EvalContext<'a> {
-    pub fn get(&self, key: &'static str) -> Option<&ContextValue> {
+    /// The slot named `key`, if the context supplies one.
+    pub fn get(&self, key: &str) -> Option<&ContextValue> {
         self.slots.iter().find(|(k, _)| *k == key).map(|(_, v)| v)
     }
 }

@@ -178,6 +178,15 @@ impl GovernancePipeline {
         ctx: &EvalContext<'_>,
         mut trace: LogicTrace,
     ) -> Verdict {
+        // The configured depth limit caps the caller's. (Until 0.1.4 the config's limit
+        // was never read; only the context's applied.)
+        let capped = EvalContext {
+            slots: ctx.slots,
+            logical_time: ctx.logical_time,
+            depth_limit: ctx.depth_limit.min(self.config.depth_limit),
+        };
+        let ctx = &capped;
+
         // ── Stage 4 + 5: Engine Routing and Evaluation ────────────────────
         trace.push(TraceEntry {
             stage: Stage::EngineRouting,
@@ -310,6 +319,33 @@ mod tests {
         let ctx = empty_ctx();
         let verdict = pipeline.evaluate_str("false", &ctx);
         assert!(!verdict.valid);
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn the_configured_depth_limit_caps_the_context() {
+        let slots = &[("a", ContextValue::Bool(false))];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        assert!(
+            GovernancePipeline::new(PipelineConfig::default())
+                .evaluate_str("not not not a", &ctx)
+                .valid
+        );
+        let shallow = GovernancePipeline::new(PipelineConfig {
+            depth_limit: 1,
+            ..PipelineConfig::default()
+        });
+        let v = shallow.evaluate_str("not not not a", &ctx);
+        assert!(!v.valid, "{v:?}");
+        assert_eq!(
+            v.cross_validation.conflict_detail,
+            Some("no engines succeeded")
+        );
+        assert!(shallow.evaluate_str("not a", &ctx).valid);
     }
 
     #[test]

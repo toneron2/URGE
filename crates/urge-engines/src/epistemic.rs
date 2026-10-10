@@ -55,10 +55,8 @@ impl LogicEngine for EpistemicEngine {
                         let key = alloc::format!("knows:{}:granted", agent);
                         #[cfg(feature = "alloc")]
                         let knows = ctx
-                            .slots
-                            .iter()
-                            .find(|(k, _)| *k == key.as_str())
-                            .and_then(|(_, v)| v.as_bool())
+                            .get(&key)
+                            .and_then(|v| v.as_bool())
                             .unwrap_or(body_result.valid);
                         #[cfg(not(feature = "alloc"))]
                         let knows = body_result.valid;
@@ -78,12 +76,7 @@ impl LogicEngine for EpistemicEngine {
                         #[cfg(feature = "alloc")]
                         let key = alloc::format!("believes:{}:granted", agent);
                         #[cfg(feature = "alloc")]
-                        let believes = ctx
-                            .slots
-                            .iter()
-                            .find(|(k, _)| *k == key.as_str())
-                            .and_then(|(_, v)| v.as_bool())
-                            .unwrap_or(true); // Default: believe what you see.
+                        let believes = ctx.get(&key).and_then(|v| v.as_bool()).unwrap_or(true); // Default: believe what you see.
                         #[cfg(not(feature = "alloc"))]
                         let believes = true;
 

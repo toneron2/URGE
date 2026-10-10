@@ -77,11 +77,7 @@ fn render(v: &ContextValue) -> String {
 fn facts(node: &AstNode, ctx: &EvalContext<'_>, out: &mut Vec<Fact>) {
     let mut add = |name: String| {
         if !out.iter().any(|f| f.name == name) {
-            let value = ctx
-                .slots
-                .iter()
-                .find(|(k, _)| *k == name.as_str())
-                .map(|(_, v)| render(v));
+            let value = ctx.get(&name).map(render);
             out.push(Fact { name, value });
         }
     };
