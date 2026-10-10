@@ -20,8 +20,8 @@
 //! 2. Classify each via the dictionary
 //! 3. Emit typed Token stream
 //!
-//! The difference is that this runs in <1µs on embedded hardware vs. the
-//! shell's ~10ms process-startup overhead.
+//! The difference is that this runs in microseconds in-process vs. the shell's
+//! ~10ms process-startup overhead.
 
 use urge_core::{
     ast::Token,

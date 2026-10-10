@@ -147,7 +147,7 @@ INPUT (governance expression or event)
   ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │ STAGE 1: TOKENIZATION                                            │
-│   Unicode Semantic Dictionary (300+ operators, 15+ paradigms)    │
+│   Unicode Semantic Dictionary (61 operator entries, 8 paradigms) │
 │   Every symbol classified before any evaluation                  │
 │   [ Shell-proof heritage: grep -oP | awk | classify pipeline ]   │
 ├──────────────────────────────────────────────────────────────────┤
@@ -190,10 +190,16 @@ Every stage emits `TraceEntry` records. The complete trace IS the compliance aud
 Engine results resolve in a fixed order. A cross-paradigm conflict denies: modal necessity
 against a boolean false, a violated temporal constraint beside an active obligation, or a
 paraconsistent contradiction. Otherwise a deontic denial overrides the other engines.
-Otherwise the majority of engines decides, and a tie permits. Confidence is the share of
-engines that agree. A connective whose sides need different engines is decided from its
-sides, each evaluated by its own engines; its confidence is the weaker side's, and only the
+Otherwise the majority of engines decides, and a tie permits. A connective whose sides need
+different engines is decided from its sides, each evaluated by its own engines, and only the
 parts of an `and` are checked against each other for conflicts.
+
+**Confidence today is binary.** Every node the parser produces is taken by exactly one
+engine, so the majority vote never has more than one voter and the agreement ratio is always
+1 of 1: confidence is 255 for any verdict an engine produced and 0 when none did. The
+engines' own confidences are not yet carried through, so the three threshold tiers
+(`healthcare` 0.80, `standard` 0.50, `embedded` 0.20) do not change verdicts. Tracked in
+[#3](https://github.com/toneron2/URGE/issues/3).
 
 ---
 
@@ -220,15 +226,15 @@ implemented and tested.
 
 | Capability                        | OPA / Rego | Drools  | URGE  |
 |-----------------------------------|-----------|---------|-------|
-| Multi-paradigm (7 logics)         | ✗         | ✗       | **✓** |
+| Multi-paradigm (7 engines)⁴       | ✗         | ✗       | **✓** |
 | Cross-paradigm validation²        | ✗         | ✗       | **✓** |
 | Deontic obligation lifecycle      | ✗         | partial | **✓** |
-| Temporal LTL monitoring           | ✗         | partial | **✓** |
-| Paraconsistent contradiction mgmt | ✗         | ✗       | **✓** |
+| Temporal LTL monitoring⁵          | ✗         | partial | partial |
+| Paraconsistent contradiction mgmt⁴ | ✗        | ✗       | partial |
 | Embedded / no_std capable         | ✗         | ✗       | WIP³  |
 | Full logic trace + audit          | partial   | partial | **✓** |
 | Formal Unicode notation output    | ✗         | ✗       | **✓** |
-| Regulatory citation anchoring     | ✗         | ✗       | **✓** |
+| Regulatory citation anchoring⁶    | ✗         | ✗       | planned |
 | Maturity, ecosystem, tooling      | **✓✓**    | **✓✓**  | v0.1  |
 
 ² Reproducible side-by-side in [`examples/comparison_opa/`](examples/comparison_opa/) —
@@ -236,6 +242,17 @@ the same policy in Rego and in URGE, showing what each system reports.
 
 ³ Embedded `no_std` support is architected but **not yet functional** — the
 heap-free AST representation is still WIP. The `std`/`alloc` tiers are complete.
+
+⁴ Seven engines ship, five are reachable from an expression string. The paraconsistent
+operators have no keyword yet, and the fuzzy engine does not read facts, so both can only be
+exercised from a hand-built AST ([#5](https://github.com/toneron2/URGE/issues/5)).
+
+⁵ The instantaneous checks (G, F, X, U against the current context) ship. The continuous
+monitors in `urge-monitor::temporal` exist but `GovernanceMonitor` does not yet drive them
+([#6](https://github.com/toneron2/URGE/issues/6)).
+
+⁶ The `Citation` type and the `citations` field on every verdict exist; no engine emits
+one yet ([#6](https://github.com/toneron2/URGE/issues/6)).
 
 OPA and Drools evaluate rules within a single logic — and do it with mature
 tooling, a large ecosystem, and years of production hardening that URGE does
@@ -304,9 +321,11 @@ echo "agent must obtain_consent before deadline" \
 # → Route to: DeonticEngine + TemporalEngine
 ```
 
-The Rust `UnicodeSemanticDictionary` does this in **<1µs** via a static
-compile-time table vs. the shell's ~10ms process-startup overhead. The
-architecture is identical. The governance insight is the same: you do not
+The Rust `UnicodeSemanticDictionary` does this through a static compile-time
+table, and a full evaluation of the gate expression above measures a few
+microseconds on x86, against the shell's ~10ms process-startup overhead. There
+is no benchmark suite yet ([#7](https://github.com/toneron2/URGE/issues/7)).
+The architecture is identical. The governance insight is the same: you do not
 need inference to decide that "must" is deontic.
 
 ---
@@ -317,7 +336,7 @@ need inference to decide that "must" is deontic.
 urge/                          Cargo workspace
 ├── crates/
 │   ├── urge-core/             no_std kernel
-│   │   ├── symbol.rs          Unicode Semantic Dictionary (300+ operators)
+│   │   ├── symbol.rs          Unicode Semantic Dictionary (61 operator entries)
 │   │   ├── ast.rs             Multi-paradigm AST (heap or heapless)
 │   │   ├── engine.rs          LogicEngine trait + Paradigm enum
 │   │   └── decision.rs        Verdict, LogicTrace, Confidence, CrossValidation

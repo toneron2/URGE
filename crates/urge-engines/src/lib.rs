@@ -5,7 +5,7 @@
 //!
 //! ## Engine registry
 //!
-//! The [`registry`] function returns a slice of all built-in engines.
+//! The [`all_engines`] function returns all built-in engines.
 //! The meta-engine (in `urge-meta`) uses this to populate its router.
 
 #![cfg_attr(not(feature = "std"), no_std)]
