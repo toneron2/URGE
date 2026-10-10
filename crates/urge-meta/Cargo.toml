@@ -23,8 +23,8 @@ serde   = ["urge-core/serde", "urge-engines/serde", "dep:serde"]
 json    = ["std", "serde", "dep:serde_json"]
 
 [dependencies]
-urge-core    = { path = "../urge-core",    version = "0.1.3" }
-urge-engines = { path = "../urge-engines", version = "0.1.3" }
+urge-core    = { path = "../urge-core",    version = "0.1.4" }
+urge-engines = { path = "../urge-engines", version = "0.1.4" }
 serde        = { version = "1", features = ["derive"], optional = true }
 serde_json   = { version = "1", optional = true }
 heapless     = { version = "0.8", default-features = false }
