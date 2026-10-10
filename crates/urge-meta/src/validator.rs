@@ -87,51 +87,49 @@ impl CrossValidator {
         let mut conflicts: u8 = 0;
         let mut conflict_detail = None;
 
-        // ── Rule 1: Modal-Boolean hard contradiction ────────────────────────
-        let modal_verdict = find_by_paradigm(&successful, Paradigm::Modal);
-        let boolean_verdict = find_by_paradigm(&successful, Paradigm::Boolean);
+        // Each rule asks whether ANY verdict of one paradigm stands in the named relation to
+        // ANY verdict of another. Until 0.1.4 a rule read the first verdict of each paradigm,
+        // so the conflicts a conjunction reported changed with the order of its conjuncts.
+        let any = |paradigm: Paradigm, valid: bool| {
+            successful
+                .iter()
+                .any(|v| v.paradigms_evaluated.contains(paradigm) && v.valid == valid)
+        };
 
-        if let (Some(modal), Some(bool_v)) = (modal_verdict, boolean_verdict) {
-            // □φ=true but Boolean φ=false → hard contradiction.
-            if modal.valid && !bool_v.valid {
-                conflicts += 1;
-                conflict_detail = Some("modal necessity vs boolean contradiction");
-                trace.push(TraceEntry {
-                    stage: Stage::CrossValidation,
-                    paradigm: None,
-                    description: "CONFLICT: □φ=true but Boolean φ=false",
-                    outcome: EntryOutcome::Conflict,
-                });
-            }
+        // ── Rule 1: Modal-Boolean hard contradiction ────────────────────────
+        // □φ=true but Boolean φ=false → hard contradiction.
+        if any(Paradigm::Modal, true) && any(Paradigm::Boolean, false) {
+            conflicts += 1;
+            conflict_detail = Some("modal necessity vs boolean contradiction");
+            trace.push(TraceEntry {
+                stage: Stage::CrossValidation,
+                paradigm: None,
+                description: "CONFLICT: □φ=true but Boolean φ=false",
+                outcome: EntryOutcome::Conflict,
+            });
         }
 
-        // ── Rule 2: Temporal deadline exceeded + Deontic obligation active ──
-        let temporal_verdict = find_by_paradigm(&successful, Paradigm::Temporal);
-        let deontic_verdict = find_by_paradigm(&successful, Paradigm::Deontic);
-
-        if let (Some(temporal), Some(deontic)) = (temporal_verdict, deontic_verdict) {
-            if !temporal.valid && deontic.valid {
-                // Temporal constraint violated while deontic says still valid —
-                // this means deadline exceeded without obligation satisfaction.
-                conflicts += 1;
-                conflict_detail =
-                    conflict_detail.or(Some("temporal deadline exceeded: obligation violated"));
-                trace.push(TraceEntry {
-                    stage: Stage::CrossValidation,
-                    paradigm: None,
-                    description: "CONFLICT: temporal constraint violated while obligation active",
-                    outcome: EntryOutcome::Conflict,
-                });
-            }
+        // ── Rule 2: Temporal constraint violated beside an obligation that holds ──
+        if any(Paradigm::Temporal, false) && any(Paradigm::Deontic, true) {
+            conflicts += 1;
+            conflict_detail = conflict_detail.or(Some(
+                "temporal constraint violated while an obligation holds",
+            ));
+            trace.push(TraceEntry {
+                stage: Stage::CrossValidation,
+                paradigm: None,
+                description: "CONFLICT: temporal constraint violated while obligation active",
+                outcome: EntryOutcome::Conflict,
+            });
         }
 
         // ── Rule 3: Paraconsistent scenario ────────────────────────────────
-        if let Some(para) = find_by_paradigm(&successful, Paradigm::Paraconsistent) {
-            if !para.cross_validation.consistent {
-                conflicts += 1;
-                conflict_detail =
-                    conflict_detail.or(Some("paraconsistent scenario: see engine trace"));
-            }
+        if successful.iter().any(|v| {
+            v.paradigms_evaluated.contains(Paradigm::Paraconsistent)
+                && !v.cross_validation.consistent
+        }) {
+            conflicts += 1;
+            conflict_detail = conflict_detail.or(Some("paraconsistent scenario: see engine trace"));
         }
 
         // ── Aggregate confidence ────────────────────────────────────────────
@@ -171,17 +169,9 @@ impl CrossValidator {
             },
         });
 
-        // Deontic takes precedence in governance: if Deontic says deny, we deny.
-        let final_valid = if let Some(deontic) = deontic_verdict {
-            // Deontic denial overrides majority — governance is not democratic.
-            if !deontic.valid {
-                false
-            } else {
-                majority_valid
-            }
-        } else {
-            majority_valid
-        };
+        // Deontic takes precedence in governance: a denied obligation anywhere denies the
+        // whole, whatever the majority says. Governance is not democratic.
+        let final_valid = !any(Paradigm::Deontic, false) && majority_valid;
 
         (
             final_valid && conflicts == 0,
@@ -198,12 +188,4 @@ impl CrossValidator {
     pub fn validate_single(verdict: &Verdict, _trace: &mut LogicTrace) -> CrossValidation {
         verdict.cross_validation.clone()
     }
-}
-
-#[cfg(feature = "alloc")]
-fn find_by_paradigm<'a>(verdicts: &[&'a Verdict], paradigm: Paradigm) -> Option<&'a Verdict> {
-    verdicts
-        .iter()
-        .find(|v| v.paradigms_evaluated.contains(paradigm))
-        .copied()
 }

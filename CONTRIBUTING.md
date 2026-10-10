@@ -5,7 +5,7 @@ Thanks for your interest — contributions are welcome.
 ## Quick checks before a PR
 
 ```
-cargo test --all-features          # 35 tests must pass
+cargo test --all-features          # 67 tests must pass
 cargo clippy --all-features -- -D warnings
 cargo fmt --all -- --check
 ```

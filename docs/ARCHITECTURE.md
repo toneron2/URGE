@@ -89,7 +89,7 @@ With URGE cross-validation:
 - Deontic engine: O(obtain_consent) deadline=T+24h, now=T+36h → VIOLATED
 - Temporal engine: G(consent_obtained) → false
 - Cross-validator: temporal says false, deontic says violated → CONFLICT
-- Final verdict: DENIED with conflict_detail = "temporal deadline exceeded: obligation violated"
+- Final verdict: DENIED with conflict_detail = "temporal constraint violated while an obligation holds"
 
 This is what `CrossValidator::validate()` implements.
 

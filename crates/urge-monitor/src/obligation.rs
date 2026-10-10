@@ -301,7 +301,9 @@ impl ObligationManager {
         match &event {
             ObligationEvent::TimeTick { now } => {
                 for ob in self.obligations.iter_mut() {
-                    if ob.check_deadline(*now) {
+                    // A lapsed permission or prohibition expires; only an obligation that
+                    // went unperformed is a violation worth an event.
+                    if ob.check_deadline(*now) && ob.state == ObligationState::Violated {
                         if let Some(deadline) = ob.deadline_ns {
                             violations.push(ObligationViolationEvent::DeadlineExceeded {
                                 id: ob.id.clone(),
@@ -385,5 +387,33 @@ impl ObligationManager {
 impl Default for ObligationManager {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(all(test, feature = "alloc"))]
+mod tests {
+    use super::*;
+
+    fn lapsed(kind: ObligationType) -> (ObligationManager, usize) {
+        let mut m = ObligationManager::new();
+        m.register(Obligation::new("ob", kind, "agent", "act", Some(10), 0), 0);
+        let events = m.process(ObligationEvent::TimeTick { now: 20 }).len();
+        (m, events)
+    }
+
+    #[test]
+    fn an_unperformed_obligation_is_a_violation() {
+        let (m, events) = lapsed(ObligationType::Obligatory);
+        assert_eq!(m.obligations[0].state, ObligationState::Violated);
+        assert_eq!(events, 1);
+    }
+
+    #[test]
+    fn a_lapsed_permission_or_prohibition_expires_without_an_event() {
+        for kind in [ObligationType::Permitted, ObligationType::Forbidden] {
+            let (m, events) = lapsed(kind);
+            assert_eq!(m.obligations[0].state, ObligationState::Expired, "{kind:?}");
+            assert_eq!(events, 0, "{kind:?}");
+        }
     }
 }

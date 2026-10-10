@@ -376,6 +376,74 @@ mod tests {
 
     #[test]
     #[cfg(feature = "alloc")]
+    fn conflicts_do_not_depend_on_conjunct_order() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::healthcare());
+        let slots = &[
+            ("a", ContextValue::Bool(true)),
+            ("b", ContextValue::Bool(false)),
+            ("c", ContextValue::Bool(true)),
+        ];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        // G(b) fails beside obligations that hold: one conflict, wherever G(b) sits.
+        for expr in [
+            "must a and always b and must c",
+            "must c and must a and always b",
+            "always b and must c and must a",
+        ] {
+            let v = pipeline.evaluate_str(expr, &ctx);
+            assert!(!v.valid, "{expr}");
+            assert!(!v.cross_validation.consistent, "{expr}: {v:?}");
+            assert_eq!(v.cross_validation.conflicts_detected, 1, "{expr}");
+        }
+        // A denied obligation denies, whichever conjunct it is.
+        for expr in [
+            "must b and must a",
+            "must a and must b",
+            "must a and must c and must b",
+        ] {
+            assert!(!pipeline.evaluate_str(expr, &ctx).valid, "{expr}");
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn capitalised_identifiers_are_identifiers() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::healthcare());
+        let slots = &[("Patient_consent", ContextValue::Bool(true))];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        let v = pipeline.evaluate_str("must Patient_consent", &ctx);
+        assert!(v.valid, "{v:?}");
+        assert_eq!(v.formal_notation, "O(Patient_consent)");
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn xor_prints_its_symbol() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::default());
+        let slots = &[
+            ("a", ContextValue::Bool(true)),
+            ("b", ContextValue::Bool(false)),
+        ];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        let v = pipeline.evaluate_str("a xor b", &ctx);
+        assert!(v.valid);
+        assert_eq!(v.formal_notation, "(a) ⊕ (b)");
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
     fn healthcare_config_exhaustive() {
         let pipeline = GovernancePipeline::default_healthcare();
         assert!(pipeline.config.exhaustive_evaluation);

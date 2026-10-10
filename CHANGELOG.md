@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+Corrections:
+
+- An identifier starting with a letter the dictionary uses as an operator's formal symbol
+  (`Patient_consent`, `Flag`, `Guard`, `Obligation`) tokenized as that operator followed by
+  the rest of the word, and the expression was denied with "no engines succeeded". ASCII
+  letters and digits are no longer looked up as operator codepoints.
+- The conflicts a conjunction reported changed with the order of its conjuncts:
+  `must a and always b and must c` reported none where `must c and must a and always b`
+  reported one. The cross-validator now compares every verdict of each paradigm, and an
+  enclosing `and` checks the leaves of a nested conjunction. The temporal-deontic conflict
+  reads "temporal constraint violated while an obligation holds"; it was "temporal deadline
+  exceeded", which no unbounded `always` involves.
+- A permission or prohibition that lapsed emitted a `DeadlineExceeded` violation event
+  while transitioning to `Expired`. Only an unperformed obligation emits one now.
+- `a xor b` printed as `(…) ∧ (b)`. It prints as `(a) ⊕ (b)`.
+- The `regex` crate was a default dependency of `urge-meta` and was never used. It is
+  removed; the `regex` feature name remains as an alias for `std`.
+- README: the integration test count.
+
 ## 0.1.3
 
 Corrections:

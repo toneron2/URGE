@@ -361,7 +361,7 @@ urge/                          Cargo workspace
     └── USE_CASES.md           Healthcare ERP + embedded/BIOS deployment targets
 ```
 
-19 end-to-end integration tests live in `crates/urge-runtime/tests/integration.rs`.
+24 end-to-end integration tests live in `crates/urge-runtime/tests/integration.rs`.
 
 ---
 
@@ -386,7 +386,7 @@ Details, code snippets, and honest status notes for both:
 ## Status & Roadmap
 
 v0.1.3 — released on GitHub ([tag `v0.1.3`](https://github.com/toneron2/URGE/releases/tag/v0.1.3));
-[crates.io](https://crates.io/crates/urge) carries 0.1.2. The `std`/`alloc` tiers are complete: 59 tests passing, clippy- and
+[crates.io](https://crates.io/crates/urge) carries 0.1.2. The `std`/`alloc` tiers are complete: 67 tests passing, clippy- and
 rustfmt-clean, CI on every push. 0.1.3 corrects the parser and the cross-validator and adds
 the deny explanation and `urge-eval`; see [`CHANGELOG.md`](CHANGELOG.md). The heap-free embedded tier and a dedicated
 probabilistic engine are the two big open items. Full status table and

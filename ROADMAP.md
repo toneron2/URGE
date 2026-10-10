@@ -1,8 +1,12 @@
 # URGE — Status & Roadmap
 
-_Last updated: 2026-07-19_
+_Last updated: 2026-10-08_
 
-## Current status: v0.1.1
+## Current status: v0.1.3
+
+v0.1.3 corrected the parser and the cross-validator and added the deny explanation and
+`urge-eval`; see [`CHANGELOG.md`](CHANGELOG.md). The notes below are from the 0.1.1 release
+and still describe the open items.
 
 The **`std` / `alloc` tiers are complete and tested.** URGE compiles clean,
 passes its full test suite, and is lint- and format-clean.
@@ -17,7 +21,7 @@ caught while verifying the README examples. crates.io metadata is ready
 | Area | State |
 |------|-------|
 | Workspace (`urge-core`, `-engines`, `-meta`, `-monitor`, `-runtime`) | ✅ builds clean |
-| Tests | ✅ 41 passing (unit + doctests + 24 end-to-end integration) |
+| Tests | ✅ 67 passing (unit + doctests + 24 end-to-end integration) |
 | `clippy -D warnings` | ✅ clean (default **and** `--all-features`) |
 | `rustfmt` | ✅ clean |
 | `serde` feature | ✅ functional (Serialize for zero-alloc trace/verdict types) |

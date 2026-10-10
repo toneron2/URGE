@@ -204,6 +204,12 @@ fn format_notation(node: &AstNode) -> alloc::string::String {
             right,
             ..
         } => alloc::format!("({}) ↔ ({})", format_notation(left), format_notation(right)),
+        Expr::Binary {
+            op: SemanticClass::ExclusiveOr,
+            left,
+            right,
+            ..
+        } => alloc::format!("({}) ⊕ ({})", format_notation(left), format_notation(right)),
         _ => alloc::string::String::from("…"),
     }
 }
