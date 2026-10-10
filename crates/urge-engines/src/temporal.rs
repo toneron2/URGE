@@ -202,6 +202,67 @@ fn eval_temporal(
             ))
         }
 
+        Expr::Binary {
+            op: SemanticClass::WeakUntil,
+            left,
+            right,
+            ..
+        } => {
+            // φ W ψ: as U, but φ may hold forever. At one instant the two coincide.
+            let phi = crate::boolean::BooleanEngine.evaluate(left, ctx)?;
+            let psi = crate::boolean::BooleanEngine.evaluate(right, ctx)?;
+            let valid = psi.valid || phi.valid;
+            trace.push(TraceEntry {
+                stage: Stage::EngineEvaluation,
+                paradigm: Some(Paradigm::Temporal),
+                description: if valid {
+                    "W: holds at this instant"
+                } else {
+                    "W: both sides false — weak until violated"
+                },
+                outcome: if valid {
+                    EntryOutcome::Permitted
+                } else {
+                    EntryOutcome::Denied
+                },
+            });
+            Ok((
+                valid,
+                alloc::format!("({}) W ({})", phi.formal_notation, psi.formal_notation),
+            ))
+        }
+
+        Expr::Binary {
+            op: SemanticClass::Release,
+            left,
+            right,
+            ..
+        } => {
+            // φ R ψ: ψ holds until and including the instant φ does. With no history, ψ
+            // must hold now. Until 0.1.4 `release` parsed and was denied as unevaluable.
+            let phi = crate::boolean::BooleanEngine.evaluate(left, ctx)?;
+            let psi = crate::boolean::BooleanEngine.evaluate(right, ctx)?;
+            let valid = psi.valid;
+            trace.push(TraceEntry {
+                stage: Stage::EngineEvaluation,
+                paradigm: Some(Paradigm::Temporal),
+                description: if valid {
+                    "R: right-hand side holds"
+                } else {
+                    "R: right-hand side false — release violated"
+                },
+                outcome: if valid {
+                    EntryOutcome::Permitted
+                } else {
+                    EntryOutcome::Denied
+                },
+            });
+            Ok((
+                valid,
+                alloc::format!("({}) R ({})", phi.formal_notation, psi.formal_notation),
+            ))
+        }
+
         _ => {
             // Delegate non-temporal nodes to Boolean.
             let r = crate::boolean::BooleanEngine.evaluate(node, ctx)?;

@@ -49,8 +49,10 @@ pub mod hipaa {
 
 /// Pre-built clinical protocol rules.
 pub mod clinical {
-    /// Informed consent must be obtained before any clinical procedure.
-    pub const INFORMED_CONSENT: &str = "must consent_obtained before procedure";
+    /// Informed consent must be obtained before any clinical procedure: a procedure
+    /// obliges consent. (Until 0.1.4 this read `must consent_obtained before procedure`,
+    /// which no engine could evaluate, so it denied in every context.)
+    pub const INFORMED_CONSENT: &str = "procedure implies must consent_obtained";
 
     /// PHQ-9 score >= 15 triggers escalation. (Kroenke et al. 2001)
     pub const PHQ9_SEVERE_ESCALATION: &str = "must escalate_to_provider";
@@ -173,5 +175,28 @@ impl HealthcareGovernor {
 impl Default for HealthcareGovernor {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn informed_consent_gates_a_procedure() {
+        let mut gov = HealthcareGovernor::new();
+        let case = |gov: &mut HealthcareGovernor, procedure: bool, consent: bool| {
+            gov.evaluate(
+                clinical::INFORMED_CONSENT,
+                &[
+                    ("procedure", ContextValue::Bool(procedure)),
+                    ("consent_obtained", ContextValue::Bool(consent)),
+                ],
+            )
+            .valid
+        };
+        assert!(!case(&mut gov, true, false), "a procedure without consent");
+        assert!(case(&mut gov, true, true));
+        assert!(case(&mut gov, false, false), "no procedure, nothing owed");
     }
 }

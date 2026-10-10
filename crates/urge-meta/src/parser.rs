@@ -152,8 +152,14 @@ impl Parser {
             }
             SemanticClass::NumericLiteral => {
                 self.consume();
-                let val: i64 = token.raw.as_str().parse().unwrap_or(0);
-                node(Expr::Lit(Literal::Integer(val)))
+                let raw = token.raw.as_str();
+                // `2.5` is a float; until 0.1.4 it parsed as the integer 0.
+                let lit = if raw.contains('.') {
+                    Literal::Float(raw.parse().unwrap_or(0.0))
+                } else {
+                    Literal::Integer(raw.parse().unwrap_or(0))
+                };
+                node(Expr::Lit(lit))
             }
             SemanticClass::BooleanLiteral => {
                 self.consume();
@@ -286,6 +292,15 @@ impl Parser {
                     name,
                     paradigms: ps,
                 })
+            }
+
+            // `likely`, `unlikely`, `probability`: classified, but no engine exists yet.
+            SemanticClass::Probability => {
+                return self.fail(alloc::format!(
+                    "'{}' at offset {}: probabilistic operators have no engine yet",
+                    token.raw,
+                    token.offset
+                ))
             }
 
             // Anything else in operand position (a binary operator, a string, an operator
@@ -454,6 +469,23 @@ mod tests {
         assert!(ast.is_none() && err.unwrap().contains("cannot start an operand"));
         let (ast, err) = parse_str("must");
         assert!(ast.is_none() && err.unwrap().contains("ends where an operand"));
+        let (ast, err) = parse_str("likely rain");
+        assert!(ast.is_none() && err.unwrap().contains("probabilistic operators"));
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn a_decimal_literal_is_a_float() {
+        let (ast, _) = parse_str("2.5");
+        assert!(matches!(
+            ast.unwrap().as_ref(),
+            Expr::Lit(Literal::Float(f)) if *f == 2.5
+        ));
+        let (ast, _) = parse_str("25");
+        assert!(matches!(
+            ast.unwrap().as_ref(),
+            Expr::Lit(Literal::Integer(25))
+        ));
     }
 
     #[test]

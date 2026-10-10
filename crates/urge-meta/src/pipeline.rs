@@ -488,6 +488,100 @@ mod tests {
 
     #[test]
     #[cfg(feature = "alloc")]
+    fn numbers_compare_and_read_as_nonzero() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::healthcare());
+        let slots = &[
+            ("battery_pct", ContextValue::Integer(80)),
+            ("temp_c", ContextValue::Float(37.5)),
+            ("zero", ContextValue::Integer(0)),
+            ("name", ContextValue::Str("ward-7")),
+        ];
+        let ctx = EvalContext {
+            slots,
+            logical_time: 0,
+            depth_limit: 16,
+        };
+        let eval = |e: &str| pipeline.evaluate_str(e, &ctx);
+        assert!(eval("battery_pct gt 20").valid);
+        assert_eq!(
+            eval("battery_pct gt 20").formal_notation,
+            "(battery_pct) > (20)"
+        );
+        assert!(!eval("battery_pct lt 20").valid);
+        assert!(eval("temp_c lte 37.5").valid);
+        assert!(eval("temp_c ≥ 37").valid, "the symbol forms tokenize too");
+        assert!(eval("battery_pct neq zero").valid);
+        assert!(!eval("missing gt 0").valid, "an absent fact compares false");
+        assert!(!eval("name eq 7").valid, "a string compares false");
+        assert!(eval("must battery_pct and battery_pct gt 20").valid);
+        // A number in boolean position is true when nonzero.
+        assert!(eval("must battery_pct").valid);
+        assert!(!eval("must zero").valid);
+        assert!(!eval("must name").valid, "a string still reads false");
+        assert!(eval("must 2.5").valid);
+        assert_eq!(eval("must 2.5").formal_notation, "O(2.5)");
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn release_and_deontic_sides_under_until_decide() {
+        let pipeline = GovernancePipeline::new(PipelineConfig::healthcare());
+        let at = |consent: bool, procedure: bool| {
+            let slots: &'static [(&'static str, ContextValue)] = match (consent, procedure) {
+                (true, true) => &[
+                    ("consent", ContextValue::Bool(true)),
+                    ("procedure", ContextValue::Bool(true)),
+                ],
+                (true, false) => &[
+                    ("consent", ContextValue::Bool(true)),
+                    ("procedure", ContextValue::Bool(false)),
+                ],
+                (false, true) => &[
+                    ("consent", ContextValue::Bool(false)),
+                    ("procedure", ContextValue::Bool(true)),
+                ],
+                (false, false) => &[
+                    ("consent", ContextValue::Bool(false)),
+                    ("procedure", ContextValue::Bool(false)),
+                ],
+            };
+            EvalContext {
+                slots,
+                logical_time: 0,
+                depth_limit: 16,
+            }
+        };
+        // φ R ψ at one instant: ψ.
+        assert!(
+            pipeline
+                .evaluate_str("consent release procedure", &at(false, true))
+                .valid
+        );
+        assert!(
+            !pipeline
+                .evaluate_str("consent release procedure", &at(true, false))
+                .valid
+        );
+        assert_eq!(
+            pipeline
+                .evaluate_str("consent release procedure", &at(true, true))
+                .formal_notation,
+            "(consent) R (procedure)"
+        );
+        // A deontic side under U: decided from its fragments, as ψ ∨ φ.
+        let v = pipeline.evaluate_str("must consent before procedure", &at(false, false));
+        assert!(!v.valid, "{v:?}");
+        assert_eq!(v.formal_notation, "(O(consent)) U (procedure)");
+        assert!(v.paradigms_evaluated.contains(Paradigm::Temporal));
+        assert!(
+            pipeline
+                .evaluate_str("must consent before procedure", &at(true, false))
+                .valid
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
     fn trace_is_non_empty() {
         let pipeline = GovernancePipeline::new(PipelineConfig::default());
         let ctx = empty_ctx();

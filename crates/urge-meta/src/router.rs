@@ -128,17 +128,32 @@ impl EngineRouter {
                 op, left, right, ..
             } = node.as_ref()
             {
-                if matches!(
+                // The temporal binaries decompose the same way: `must consent before
+                // procedure` is O(consent) U procedure, whose sides the temporal engine
+                // cannot evaluate itself. Each is decided at this instant as the temporal
+                // engine decides boolean sides: U and W as ψ ∨ φ, R as ψ.
+                let temporal = matches!(
                     op,
-                    SemanticClass::Conjunction
-                        | SemanticClass::Disjunction
-                        | SemanticClass::Implication
-                        | SemanticClass::Biconditional
-                        | SemanticClass::ExclusiveOr
-                ) {
+                    SemanticClass::Until | SemanticClass::Release | SemanticClass::WeakUntil
+                );
+                if temporal
+                    || matches!(
+                        op,
+                        SemanticClass::Conjunction
+                            | SemanticClass::Disjunction
+                            | SemanticClass::Implication
+                            | SemanticClass::Biconditional
+                            | SemanticClass::ExclusiveOr
+                    )
+                {
+                    let own_paradigm = if temporal {
+                        Paradigm::Temporal
+                    } else {
+                        Paradigm::Boolean
+                    };
                     trace.push(TraceEntry {
                         stage: Stage::EngineRouting,
-                        paradigm: Some(Paradigm::Boolean),
+                        paradigm: Some(own_paradigm),
                         description: "decomposing connective into paradigm fragments",
                         outcome: EntryOutcome::Routed,
                     });
@@ -156,6 +171,10 @@ impl EngineRouter {
                         SemanticClass::Implication => !left_valid || right_valid,
                         SemanticClass::Biconditional => left_valid == right_valid,
                         SemanticClass::ExclusiveOr => left_valid ^ right_valid,
+                        SemanticClass::Until | SemanticClass::WeakUntil => {
+                            right_valid || left_valid
+                        }
+                        SemanticClass::Release => right_valid,
                         _ => unreachable!(),
                     };
                     let (l, r) = (side_notation(&left.results), side_notation(&right.results));
@@ -164,7 +183,10 @@ impl EngineRouter {
                         SemanticClass::Disjunction => alloc::format!("({l}) ∨ ({r})"),
                         SemanticClass::Implication => alloc::format!("({l}) → ({r})"),
                         SemanticClass::Biconditional => alloc::format!("({l}) ↔ ({r})"),
-                        _ => alloc::format!("({l}) ⊕ ({r})"),
+                        SemanticClass::ExclusiveOr => alloc::format!("({l}) ⊕ ({r})"),
+                        SemanticClass::Until => alloc::format!("({l}) U ({r})"),
+                        SemanticClass::WeakUntil => alloc::format!("({l}) W ({r})"),
+                        _ => alloc::format!("({l}) R ({r})"),
                     };
 
                     // The parts an `and` cross-validates: a side that is itself a conjunction
@@ -183,7 +205,7 @@ impl EngineRouter {
                         CrossValidation::ok()
                     };
                     let mut paradigms = ParadigmSet::empty();
-                    paradigms.insert(Paradigm::Boolean);
+                    paradigms.insert(own_paradigm);
                     let mut citations = alloc::vec![];
                     for v in parts.iter().filter_map(|v| v.as_ref().ok()) {
                         for p in v.paradigms_evaluated.iter() {
@@ -195,7 +217,7 @@ impl EngineRouter {
                     let mut own = LogicTrace::new();
                     own.push(TraceEntry {
                         stage: Stage::CrossValidation,
-                        paradigm: Some(Paradigm::Boolean),
+                        paradigm: Some(own_paradigm),
                         description: DECOMPOSED,
                         outcome: if valid {
                             EntryOutcome::Permitted
