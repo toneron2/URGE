@@ -81,7 +81,7 @@ cargo run -p urge-runtime --example agent_gate
 $ cargo add urge
 ```
 
-`cargo add urge` installs 0.1.2 from crates.io. For 0.1.4, depend on the tag:
+`cargo add urge` installs 0.1.4 from crates.io. The same release as a git dependency:
 `urge = { git = "https://github.com/toneron2/URGE", tag = "v0.1.4" }`.
 
 `urge` is a facade over `urge-runtime` and is the one to depend on unless you
@@ -410,7 +410,7 @@ Details, code snippets, and honest status notes for both:
 ## Status & Roadmap
 
 v0.1.4 — released on GitHub ([tag `v0.1.4`](https://github.com/toneron2/URGE/releases/tag/v0.1.4));
-[crates.io](https://crates.io/crates/urge) carries 0.1.2. The `std`/`alloc` tiers are complete: 84 tests passing, clippy- and
+the same six crates are on [crates.io](https://crates.io/crates/urge) at 0.1.4. The `std`/`alloc` tiers are complete: 84 tests passing, clippy- and
 rustfmt-clean, CI on every push. 0.1.4 carries engine confidence into the verdict, evaluates
 comparisons, `release` and the fuzzy and paraconsistent engines from expressions, anchors
 the healthcare policies to citations and drives the LTL monitors; see [`CHANGELOG.md`](CHANGELOG.md). The heap-free embedded tier and a dedicated
