@@ -18,8 +18,8 @@ std     = ["alloc", "urge-core/std", "urge-meta/std"]
 serde   = ["urge-core/serde", "dep:serde"]
 
 [dependencies]
-urge-core = { path = "../urge-core", version = "0.1.3" }
-urge-meta = { path = "../urge-meta", version = "0.1.3" }
+urge-core = { path = "../urge-core", version = "0.1.4" }
+urge-meta = { path = "../urge-meta", version = "0.1.4" }
 serde     = { version = "1", features = ["derive"], optional = true }
 heapless  = { version = "0.8", default-features = false }
 log       = { version = "0.4", default-features = false }

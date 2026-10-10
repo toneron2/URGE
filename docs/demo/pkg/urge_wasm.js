@@ -1,3 +1,5 @@
+/* @ts-self-types="./urge_wasm.d.ts" */
+
 /**
  * Evaluate `expr` against `ctx_json`, a flat JSON object of slots
  * (`{"authorized": true, "battery_pct": 80}`). Returns the full `Verdict`

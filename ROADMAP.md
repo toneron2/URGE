@@ -1,11 +1,13 @@
 # URGE — Status & Roadmap
 
-_Last updated: 2026-10-08_
+_Last updated: 2026-10-10_
 
-## Current status: v0.1.3
+## Current status: v0.1.4
 
-v0.1.3 corrected the parser and the cross-validator and added the deny explanation and
-`urge-eval`; see [`CHANGELOG.md`](CHANGELOG.md). The notes below are from the 0.1.1 release
+v0.1.4 carries engine confidence into the verdict, evaluates comparisons, `release` and the
+fuzzy and paraconsistent engines from expressions, anchors the healthcare policies to
+citations and drives the LTL monitors. v0.1.3 corrected the parser and the cross-validator
+and added the deny explanation and `urge-eval`; see [`CHANGELOG.md`](CHANGELOG.md). The notes below are from the 0.1.1 release
 and still describe the open items.
 
 The **`std` / `alloc` tiers are complete and tested.** URGE compiles clean,

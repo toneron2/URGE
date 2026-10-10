@@ -81,8 +81,8 @@ cargo run -p urge-runtime --example agent_gate
 $ cargo add urge
 ```
 
-`cargo add urge` installs 0.1.2 from crates.io. For 0.1.3, depend on the tag:
-`urge = { git = "https://github.com/toneron2/URGE", tag = "v0.1.3" }`.
+`cargo add urge` installs 0.1.2 from crates.io. For 0.1.4, depend on the tag:
+`urge = { git = "https://github.com/toneron2/URGE", tag = "v0.1.4" }`.
 
 `urge` is a facade over `urge-runtime` and is the one to depend on unless you
 need a narrower slice. On an embedded target turn the defaults off — that gives
@@ -106,7 +106,7 @@ JSON. On a deny, `because` lists each clause with the facts it read and names th
 that decided it. The exit status is 0 for permitted, 1 for denied and 2 for malformed input.
 
 ```console
-$ cargo install --git https://github.com/toneron2/URGE --tag v0.1.3 urge-cli
+$ cargo install --git https://github.com/toneron2/URGE --tag v0.1.4 urge-cli
 $ echo '{"expr": "must authorized and must_not breach", "facts": {"authorized": false}}' | urge-eval
 ```
 
@@ -236,12 +236,12 @@ implemented and tested.
 | Multi-paradigm (7 engines)        | ✗         | ✗       | **✓** |
 | Cross-paradigm validation²        | ✗         | ✗       | **✓** |
 | Deontic obligation lifecycle      | ✗         | partial | **✓** |
-| Temporal LTL monitoring⁵          | ✗         | partial | partial |
+| Temporal LTL monitoring⁵          | ✗         | partial | **✓** |
 | Paraconsistent contradiction mgmt | ✗         | ✗       | **✓** |
 | Embedded / no_std capable         | ✗         | ✗       | WIP³  |
 | Full logic trace + audit          | partial   | partial | **✓** |
 | Formal Unicode notation output    | ✗         | ✗       | **✓** |
-| Regulatory citation anchoring⁶    | ✗         | ✗       | planned |
+| Regulatory citation anchoring⁶    | ✗         | ✗       | **✓** |
 | Maturity, ecosystem, tooling      | **✓✓**    | **✓✓**  | v0.1  |
 
 ² Reproducible side-by-side in [`examples/comparison_opa/`](examples/comparison_opa/) —
@@ -250,12 +250,14 @@ the same policy in Rego and in URGE, showing what each system reports.
 ³ Embedded `no_std` support is architected but **not yet functional** — the
 heap-free AST representation is still WIP. The `std`/`alloc` tiers are complete.
 
-⁵ The instantaneous checks (G, F, X, U against the current context) ship. The continuous
-monitors in `urge-monitor::temporal` exist but `GovernanceMonitor` does not yet drive them
-([#6](https://github.com/toneron2/URGE/issues/6)).
+⁵ The instantaneous checks (G, F, X, U, R, W against the current context) ship, and
+`GovernanceMonitor::watch` and `observe` drive the continuous monitors in
+`urge-monitor::temporal` from the facts of each instant. `G(F(φ))` is liveness and is never
+reported violated at a finite instant.
 
-⁶ The `Citation` type and the `citations` field on every verdict exist; no engine emits
-one yet ([#6](https://github.com/toneron2/URGE/issues/6)).
+⁶ The healthcare policies (`hipaa::*`, `clinical::*`) carry their citation onto the verdict
+and into the audit log through `HealthcareGovernor::evaluate_policy`. A free-form expression
+carries none.
 
 OPA and Drools evaluate rules within a single logic — and do it with mature
 tooling, a large ecosystem, and years of production hardening that URGE does
@@ -383,7 +385,7 @@ urge/                          Cargo workspace
     └── USE_CASES.md           Healthcare ERP + embedded/BIOS deployment targets
 ```
 
-24 end-to-end integration tests live in `crates/urge-runtime/tests/integration.rs`.
+26 end-to-end integration tests live in `crates/urge-runtime/tests/integration.rs`.
 
 ---
 
@@ -407,10 +409,11 @@ Details, code snippets, and honest status notes for both:
 
 ## Status & Roadmap
 
-v0.1.3 — released on GitHub ([tag `v0.1.3`](https://github.com/toneron2/URGE/releases/tag/v0.1.3));
-[crates.io](https://crates.io/crates/urge) carries 0.1.2. The `std`/`alloc` tiers are complete: 67 tests passing, clippy- and
-rustfmt-clean, CI on every push. 0.1.3 corrects the parser and the cross-validator and adds
-the deny explanation and `urge-eval`; see [`CHANGELOG.md`](CHANGELOG.md). The heap-free embedded tier and a dedicated
+v0.1.4 — released on GitHub ([tag `v0.1.4`](https://github.com/toneron2/URGE/releases/tag/v0.1.4));
+[crates.io](https://crates.io/crates/urge) carries 0.1.2. The `std`/`alloc` tiers are complete: 84 tests passing, clippy- and
+rustfmt-clean, CI on every push. 0.1.4 carries engine confidence into the verdict, evaluates
+comparisons, `release` and the fuzzy and paraconsistent engines from expressions, anchors
+the healthcare policies to citations and drives the LTL monitors; see [`CHANGELOG.md`](CHANGELOG.md). The heap-free embedded tier and a dedicated
 probabilistic engine are the two big open items. Full status table and
 priorities: [`ROADMAP.md`](ROADMAP.md).
 
