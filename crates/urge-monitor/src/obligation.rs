@@ -122,6 +122,9 @@ pub struct Obligation {
 
     /// Priority (higher = more urgent). Used for escalation ordering.
     pub priority: u8,
+
+    /// Who waived this obligation, once it is `Waived`.
+    pub waived_by: Option<HString<32>>,
 }
 
 impl Obligation {
@@ -154,6 +157,7 @@ impl Obligation {
             last_updated: created_at,
             source: None,
             priority: 128,
+            waived_by: None,
         }
     }
 
@@ -198,6 +202,19 @@ impl Obligation {
         if self.state.is_active() {
             self.state = ObligationState::Waived;
             self.last_updated = now;
+        }
+    }
+
+    /// Waive this obligation, recording who did. (Until 0.1.4 the waiver's author was
+    /// carried in the event and dropped.)
+    pub fn waive_by(&mut self, now: u64, by: &str) {
+        if self.state.is_active() {
+            self.waive(now);
+            let mut s = HString::new();
+            for c in by.chars().take(32) {
+                let _ = s.push(c);
+            }
+            self.waived_by = Some(s);
         }
     }
 
@@ -331,12 +348,12 @@ impl ObligationManager {
 
             ObligationEvent::Waiver {
                 obligation_id,
+                waived_by,
                 timestamp,
-                ..
             } => {
                 for ob in self.obligations.iter_mut() {
                     if &ob.id == obligation_id {
-                        ob.waive(*timestamp);
+                        ob.waive_by(*timestamp, waived_by.as_str());
                         break;
                     }
                 }

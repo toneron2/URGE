@@ -36,6 +36,6 @@ pub mod engine;
 pub mod obligation;
 pub mod temporal;
 
-pub use engine::GovernanceMonitor;
+pub use engine::{GovernanceMonitor, LtlViolation, MonitorStats};
 pub use obligation::{Obligation, ObligationId, ObligationState, ObligationType};
-pub use temporal::{LtlFormula, TemporalMonitor};
+pub use temporal::{LtlFormula, MonitorState, TemporalMonitor};
