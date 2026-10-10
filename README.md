@@ -198,12 +198,13 @@ Otherwise the majority of engines decides, and a tie permits. A connective whose
 different engines is decided from its sides, each evaluated by its own engines, and only the
 parts of an `and` are checked against each other for conflicts.
 
-**Confidence today is binary.** Every node the parser produces is taken by exactly one
-engine, so the majority vote never has more than one voter and the agreement ratio is always
-1 of 1: confidence is 255 for any verdict an engine produced and 0 when none did. The
-engines' own confidences are not yet carried through, so the three threshold tiers
-(`healthcare` 0.80, `standard` 0.50, `embedded` 0.20) do not change verdicts. Tracked in
-[#3](https://github.com/toneron2/URGE/issues/3).
+**Confidence** is the weaker of two measures: the share of engines that agree, and the least
+confident engine among them. A node is handled by one engine today, so the second is what
+varies: a boolean or deontic verdict is certain (1.0), a temporal or modal verdict is 0.80
+(the future is open), an epistemic deny is 0.60, a fuzzy verdict is its membership degree,
+and a verdict no engine could produce is 0. A connective takes its weaker side. A verdict
+below the configured threshold (`healthcare` 0.80, `standard` 0.50, `embedded` 0.20) is
+denied, and the trace says so.
 
 ---
 
