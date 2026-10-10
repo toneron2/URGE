@@ -457,14 +457,17 @@ mod tests {
         // A connective takes its weaker side.
         assert_eq!(conf("must a and always a"), Confidence::HIGH);
         assert_eq!(conf("always a or must a"), Confidence::HIGH);
-        // Nothing an engine could decide: no confidence.
-        assert_eq!(conf("a release b"), Confidence::NONE);
+        // `release` is decided by the temporal engine since #10, at the temporal tier.
+        assert_eq!(conf("a release b"), Confidence::HIGH);
     }
 
     #[test]
     #[cfg(feature = "alloc")]
     fn the_threshold_now_engages() {
-        let slots = &[("a", ContextValue::Bool(true))];
+        let slots = &[
+            ("a", ContextValue::Bool(true)),
+            ("h", ContextValue::Float(0.5)),
+        ];
         let ctx = EvalContext {
             slots,
             logical_time: 0,
@@ -488,7 +491,8 @@ mod tests {
             "a certain verdict still permits"
         );
         // A fuzzy verdict at degree 0.5 is confidence 127: below every tier but embedded.
-        let fuzzy = "a fuzzy_and a";
+        // The fuzzy engine reads a fact's degree since #11, so the slot carries 0.5.
+        let fuzzy = "h fuzzy_and h";
         assert!(!healthcare.evaluate_str(fuzzy, &ctx).valid);
         assert!(
             !GovernancePipeline::new(PipelineConfig::default())
