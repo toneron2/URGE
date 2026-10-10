@@ -30,11 +30,15 @@ pub struct AuditEntry {
     pub conflicts: u8,
     /// Formal logic notation of the evaluated expression.
     pub formal_notation: String,
+    /// The citations the verdict carried, by id (e.g. `HIPAA-§164.312(a)(1)`).
+    pub citations: Vec<String>,
     /// The full logic trace serialized to JSON (if serde feature enabled).
     #[cfg(feature = "serde")]
     pub trace_json: Option<String>,
     /// Optional correlation ID from external system (e.g., request ID, patient ID).
     pub correlation_id: Option<String>,
+    /// The agent whose action was decided, when the caller named one.
+    pub agent: Option<String>,
 }
 
 /// Append-only governance audit log.
@@ -59,6 +63,18 @@ impl AuditLog {
         timestamp_ns: u64,
         correlation_id: Option<&str>,
     ) -> u64 {
+        self.record_with(expression, verdict, timestamp_ns, correlation_id, None)
+    }
+
+    /// Record a governance decision, naming the acting agent.
+    pub fn record_with(
+        &mut self,
+        expression: &str,
+        verdict: &Verdict,
+        timestamp_ns: u64,
+        correlation_id: Option<&str>,
+        agent: Option<&str>,
+    ) -> u64 {
         let seq = self.seq;
         self.seq += 1;
 
@@ -74,12 +90,20 @@ impl AuditLog {
                 .count() as u8,
             conflicts: verdict.cross_validation.conflicts_detected,
             formal_notation: verdict.formal_notation.clone(),
+            citations: verdict.citations.iter().map(|c| c.id.clone()).collect(),
+            // Until 0.1.4 this was always None.
             #[cfg(feature = "serde")]
-            trace_json: None, // Could serialize verdict.trace if desired.
+            trace_json: serde_json::to_string(&verdict.trace).ok(),
             correlation_id: correlation_id.map(Into::into),
+            agent: agent.map(Into::into),
         });
 
         seq
+    }
+
+    /// Every entry, in sequence order.
+    pub fn entries(&self) -> &[AuditEntry] {
+        &self.entries
     }
 
     /// Returns all entries since `after_seq` (exclusive).

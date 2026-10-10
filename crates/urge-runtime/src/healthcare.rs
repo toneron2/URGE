@@ -16,7 +16,10 @@
 //! The goal: when an auditor asks "why did the system allow/deny X?",
 //! the answer traces to a citable, authoritative source.
 
-use urge_core::engine::{ContextValue, EvalContext};
+use urge_core::{
+    decision::{Citation, Verdict},
+    engine::{ContextValue, EvalContext},
+};
 use urge_meta::{GovernancePipeline, PipelineConfig};
 use urge_monitor::{
     obligation::{Obligation, ObligationType, ObligationViolationEvent},
@@ -25,40 +28,108 @@ use urge_monitor::{
 
 use crate::audit::AuditLog;
 
-/// Pre-built HIPAA compliance rules as governance expressions.
+/// A governance rule anchored to the source that requires it.
+///
+/// [`HealthcareGovernor::evaluate_policy`] attaches the source to the verdict as a
+/// [`Citation`] and to the audit entry, so a decision can be traced to the provision
+/// that produced it. Until 0.1.4 the rules were bare expression strings and no verdict
+/// ever carried a citation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Policy {
+    /// The governance expression.
+    pub expression: &'static str,
+    /// Short citation id, e.g. `HIPAA-§164.312(a)(1)`.
+    pub citation: &'static str,
+    /// What the cited provision requires, in one sentence.
+    pub requirement: &'static str,
+}
+
+impl Policy {
+    /// The citation this policy anchors a verdict to.
+    pub fn cite(&self) -> Citation {
+        Citation {
+            id: self.citation.into(),
+            description: self.requirement.into(),
+        }
+    }
+}
+
+/// Pre-built HIPAA compliance rules, each anchored to its section of 45 CFR 164.
 pub mod hipaa {
-    /// HIPAA Minimum Necessary: access must be limited to the minimum necessary
-    /// to accomplish the intended purpose. §164.502(b)
-    pub const MIN_NECESSARY: &str = "must minimum_necessary_access";
+    use super::Policy;
 
-    /// HIPAA Access Control: covered entities must implement technical policies
-    /// that allow access only to authorized users. §164.312(a)(1)
-    pub const ACCESS_CONTROL: &str = "must authorized_user and must authenticated";
+    /// Minimum Necessary: access limited to the minimum necessary for the purpose.
+    pub const MIN_NECESSARY: Policy = Policy {
+        expression: "must minimum_necessary_access",
+        citation: "HIPAA-§164.502(b)",
+        requirement: "Uses and disclosures of PHI are limited to the minimum necessary to accomplish the intended purpose.",
+    };
 
-    /// HIPAA Audit Controls: hardware, software, and procedural mechanisms to
-    /// record and examine activity. §164.312(b)
-    pub const AUDIT_CONTROLS: &str = "always audit_active";
+    /// Access Control: technical policies that allow access only to authorized users.
+    pub const ACCESS_CONTROL: Policy = Policy {
+        expression: "must authorized_user and must authenticated",
+        citation: "HIPAA-§164.312(a)(1)",
+        requirement: "Technical policies and procedures allow access to ePHI only to persons granted access rights.",
+    };
 
-    /// HIPAA Integrity: PHI must not be improperly altered or destroyed. §164.312(c)
-    pub const DATA_INTEGRITY: &str = "always phi_integrity_maintained";
+    /// Audit Controls: mechanisms that record and examine activity on ePHI systems.
+    pub const AUDIT_CONTROLS: Policy = Policy {
+        expression: "always audit_active",
+        citation: "HIPAA-§164.312(b)",
+        requirement: "Hardware, software and procedural mechanisms record and examine activity in systems that contain ePHI.",
+    };
 
-    /// HIPAA Transmission Security: guard against unauthorized access during
-    /// transmission. §164.312(e)(1)
-    pub const TRANSMISSION_SECURITY: &str = "must encrypted_transmission";
+    /// Integrity: PHI must not be improperly altered or destroyed.
+    pub const DATA_INTEGRITY: Policy = Policy {
+        expression: "always phi_integrity_maintained",
+        citation: "HIPAA-§164.312(c)",
+        requirement: "ePHI is protected from improper alteration or destruction.",
+    };
+
+    /// Transmission Security: guard against unauthorized access during transmission.
+    pub const TRANSMISSION_SECURITY: Policy = Policy {
+        expression: "must encrypted_transmission",
+        citation: "HIPAA-§164.312(e)(1)",
+        requirement:
+            "ePHI transmitted over an electronic network is guarded against unauthorized access.",
+    };
+
+    /// PHI access as [`HealthcareGovernor::check_phi_access`](super::HealthcareGovernor::check_phi_access)
+    /// decides it: access control and audit controls together.
+    pub const PHI_ACCESS: Policy = Policy {
+        expression: "must authorized_user and must authenticated and always audit_active",
+        citation: "HIPAA-§164.312(a)(1); HIPAA-§164.312(b)",
+        requirement: "Access to ePHI is granted only to authorized, authenticated users while audit controls record the access.",
+    };
 }
 
 /// Pre-built clinical protocol rules.
 pub mod clinical {
+    use super::Policy;
+
     /// Informed consent must be obtained before any clinical procedure: a procedure
     /// obliges consent. (Until 0.1.4 this read `must consent_obtained before procedure`,
     /// which no engine could evaluate, so it denied in every context.)
-    pub const INFORMED_CONSENT: &str = "procedure implies must consent_obtained";
+    pub const INFORMED_CONSENT: Policy = Policy {
+        expression: "procedure implies must consent_obtained",
+        citation: "clinical:informed-consent",
+        requirement: "A clinical procedure is performed only with the patient's informed consent.",
+    };
 
     /// PHQ-9 score >= 15 triggers escalation. (Kroenke et al. 2001)
-    pub const PHQ9_SEVERE_ESCALATION: &str = "must escalate_to_provider";
+    pub const PHQ9_SEVERE_ESCALATION: Policy = Policy {
+        expression: "must escalate_to_provider",
+        citation: "PHQ-9:Kroenke-2001",
+        requirement:
+            "A PHQ-9 score of 15 or more (moderately severe depression) is escalated to a provider.",
+    };
 
     /// Medication administration requires order verification.
-    pub const MED_ADMIN_ORDER: &str = "must verified_order and must authenticated";
+    pub const MED_ADMIN_ORDER: Policy = Policy {
+        expression: "must verified_order and must authenticated",
+        citation: "clinical:medication-order-verification",
+        requirement: "Medication is administered only against a verified order by an authenticated clinician.",
+    };
 }
 
 /// The healthcare governance system — HIPAA + clinical + audit, combined.
@@ -111,7 +182,7 @@ impl HealthcareGovernor {
         &mut self,
         expression: &str,
         context_slots: &[(&'static str, ContextValue)],
-    ) -> urge_core::decision::Verdict {
+    ) -> Verdict {
         let ctx = EvalContext {
             slots: context_slots,
             logical_time: self.current_time_ns,
@@ -123,13 +194,42 @@ impl HealthcareGovernor {
         verdict
     }
 
-    /// Check HIPAA access control before allowing a provider to access PHI.
+    /// Evaluate a [`Policy`]: its expression against `context_slots`, with the policy's
+    /// citation on the verdict and on the audit entry, which also records the acting
+    /// `agent` and a `correlation_id` (a patient or request id) when given.
+    pub fn evaluate_policy(
+        &mut self,
+        policy: &Policy,
+        context_slots: &[(&'static str, ContextValue)],
+        agent: Option<&str>,
+        correlation_id: Option<&str>,
+    ) -> Verdict {
+        let ctx = EvalContext {
+            slots: context_slots,
+            logical_time: self.current_time_ns,
+            depth_limit: 16,
+        };
+        let mut verdict = self.monitor.pipeline.evaluate_str(policy.expression, &ctx);
+        verdict.citations.push(policy.cite());
+        self.audit.record_with(
+            policy.expression,
+            &verdict,
+            self.current_time_ns,
+            correlation_id,
+            agent,
+        );
+        verdict
+    }
+
+    /// Check HIPAA access control before allowing a provider to access PHI: the
+    /// [`hipaa::PHI_ACCESS`] policy, audited under `patient_id` with `agent_id` as the
+    /// actor. Until 0.1.4 the agent, the patient and `audit_active` were ignored.
     ///
     /// Returns `Ok(())` if permitted, `Err(denial_reason)` if denied.
     pub fn check_phi_access(
         &mut self,
-        _agent_id: &str,
-        _patient_id: &str,
+        agent_id: &str,
+        patient_id: &str,
         is_authorized: bool,
         is_authenticated: bool,
         audit_active: bool,
@@ -140,11 +240,14 @@ impl HealthcareGovernor {
             ("audit_active", ContextValue::Bool(audit_active)),
             ("minimum_necessary_access", ContextValue::Bool(true)), // Caller asserts this.
         ];
-        let verdict = self.evaluate(hipaa::ACCESS_CONTROL, slots);
+        let verdict =
+            self.evaluate_policy(&hipaa::PHI_ACCESS, slots, Some(agent_id), Some(patient_id));
         if verdict.valid {
             Ok(())
+        } else if !is_authorized || !is_authenticated {
+            Err("HIPAA §164.312(a)(1): access denied, user not authorized or not authenticated")
         } else {
-            Err("HIPAA access control denied: insufficient authorization or authentication")
+            Err("HIPAA §164.312(b): access denied, audit controls are not active")
         }
     }
 
@@ -187,7 +290,7 @@ mod tests {
         let mut gov = HealthcareGovernor::new();
         let case = |gov: &mut HealthcareGovernor, procedure: bool, consent: bool| {
             gov.evaluate(
-                clinical::INFORMED_CONSENT,
+                clinical::INFORMED_CONSENT.expression,
                 &[
                     ("procedure", ContextValue::Bool(procedure)),
                     ("consent_obtained", ContextValue::Bool(consent)),
