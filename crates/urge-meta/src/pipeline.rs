@@ -464,7 +464,10 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn the_threshold_now_engages() {
-        let slots = &[("a", ContextValue::Bool(true)), ("h", ContextValue::Float(0.5))];
+        let slots = &[
+            ("a", ContextValue::Bool(true)),
+            ("h", ContextValue::Float(0.5)),
+        ];
         let ctx = EvalContext {
             slots,
             logical_time: 0,
